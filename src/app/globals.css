@@ -1,0 +1,192 @@
+@import "tailwindcss";
+
+:root {
+  /* Y2K Pastel Color Palette */
+  --pastel-yellow: #FFF3B0;
+  --pastel-pink: #FFD6E0;
+  --pastel-blue: #C5E8FF;
+  --pastel-green: #D4F5D4;
+  --pastel-purple: #E8D5F2;
+  --pastel-orange: #FFE4C9;
+  --pastel-cream: #FFF8E7;
+  
+  /* Base colors */
+  --background: #F5E6D3;
+  --foreground: #2D2D2D;
+  --paper-white: #FFFEF9;
+  --border-black: #1A1A1A;
+  
+  /* Accent colors */
+  --accent-red: #FF6B6B;
+  --accent-blue: #4ECDC4;
+  --accent-yellow: #FFE66D;
+}
+
+/* Dark Mode */
+.dark {
+  --pastel-yellow: #3D3A2A;
+  --pastel-pink: #3D2A30;
+  --pastel-blue: #2A3540;
+  --pastel-green: #2A3D2A;
+  --pastel-purple: #352A3D;
+  --pastel-orange: #3D3528;
+  --pastel-cream: #2D2A25;
+  
+  --background: #1A1A1A;
+  --foreground: #F5F5F5;
+  --paper-white: #2D2D2D;
+  --border-black: #4A4A4A;
+  
+  --accent-red: #FF8080;
+  --accent-blue: #6EDDD4;
+  --accent-yellow: #FFE88A;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-felipa: var(--font-felipa);
+  --font-kanit: var(--font-kanit);
+}
+
+/* Custom Font Classes */
+.font-felipa {
+  font-family: var(--font-felipa), cursive;
+}
+
+.font-kanit {
+  font-family: var(--font-kanit), sans-serif;
+}
+
+/* Hard Shadow Utility */
+.shadow-hard {
+  box-shadow: 4px 4px 0px var(--border-black);
+}
+
+.shadow-hard-sm {
+  box-shadow: 2px 2px 0px var(--border-black);
+}
+
+.shadow-hard-lg {
+  box-shadow: 6px 6px 0px var(--border-black);
+}
+
+/* Paper Texture */
+.paper-texture {
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 24px,
+      rgba(0,0,0,0.03) 24px,
+      rgba(0,0,0,0.03) 25px
+    );
+}
+
+/* Folder Tab Styles */
+.folder-tab {
+  position: relative;
+  border-radius: 8px 8px 0 0;
+  border: 2px solid var(--border-black);
+  border-bottom: none;
+  transition: transform 0.2s ease;
+}
+
+.folder-tab:hover {
+  transform: translateY(-2px);
+}
+
+.folder-tab.active {
+  z-index: 10;
+  transform: translateY(-4px);
+}
+
+/* Neo-Skeuomorphism Card */
+.neo-card {
+  background: var(--paper-white);
+  border: 2px solid var(--border-black);
+  border-radius: 12px;
+  box-shadow: 4px 4px 0px var(--border-black);
+}
+
+/* Retro Button */
+.retro-btn {
+  background: var(--pastel-yellow);
+  border: 2px solid var(--border-black);
+  border-radius: 8px;
+  box-shadow: 3px 3px 0px var(--border-black);
+  transition: all 0.1s ease;
+  font-family: var(--font-kanit), sans-serif;
+}
+
+.retro-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px var(--border-black);
+}
+
+.retro-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px var(--border-black);
+}
+
+/* Sticky Note */
+.sticky-note {
+  background: var(--pastel-yellow);
+  border: 2px solid var(--border-black);
+  box-shadow: 3px 3px 0px rgba(0,0,0,0.2);
+  transform: rotate(-1deg);
+}
+
+/* ID Card Style */
+.id-card {
+  background: linear-gradient(135deg, #FFFEF9 0%, #f0f0f0 100%);
+  border: 3px solid #1A1A1A;
+  border-radius: 12px;
+  box-shadow: 4px 4px 0px #1A1A1A;
+}
+
+.dark .id-card {
+  background: linear-gradient(135deg, #2D2D2D 0%, #3D3D3D 100%);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+}
+
+/* Dark mode shadow fix */
+.dark .shadow-hard {
+  box-shadow: none;
+}
+
+.dark .shadow-hard-sm {
+  box-shadow: none;
+}
+
+.dark .shadow-hard-lg {
+  box-shadow: none;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-kanit), sans-serif;
+  min-height: 100vh;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--pastel-cream);
+  border: 2px solid var(--border-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--pastel-pink);
+  border: 2px solid var(--border-black);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--pastel-purple);
+}
