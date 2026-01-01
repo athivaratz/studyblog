@@ -28,7 +28,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       return;
     }
     // Otherwise check localStorage or system preference
-    const savedTheme = localStorage.getItem("studygram-theme") as Theme | null;
+    const savedTheme = localStorage.getItem("studyblog-theme") as Theme | null;
     if (savedTheme) {
       setThemeState(savedTheme);
     } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
@@ -44,7 +44,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const effectiveTheme = forceDarkMode ? "dark" : theme;
       document.documentElement.classList.toggle("dark", effectiveTheme === "dark");
       if (!forceDarkMode) {
-        localStorage.setItem("studygram-theme", theme);
+        localStorage.setItem("studyblog-theme", theme);
       }
     }
   }, [theme, mounted, forceDarkMode]);

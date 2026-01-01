@@ -1,4 +1,5 @@
 export { FolderTab } from "./FolderTab";
+export { FolderCard } from "./FolderCard";
 export { PaperCard } from "./PaperCard";
 export { RetroButton } from "./RetroButton";
 export { StickyNote } from "./StickyNote";

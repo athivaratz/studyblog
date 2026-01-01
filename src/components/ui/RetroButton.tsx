@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
+import { useTheme } from "@/contexts";
 
 interface RetroButtonProps {
   children: ReactNode;
@@ -13,14 +14,26 @@ interface RetroButtonProps {
   type?: "button" | "submit" | "reset";
 }
 
-const colorVariants = {
-  yellow: "bg-[#FFF3B0] hover:bg-[#FFE566] dark:bg-[#4D4A2A] dark:hover:bg-[#5D5A3A]",
-  pink: "bg-[#FFD6E0] hover:bg-[#FFB6C1] dark:bg-[#5C3A42] dark:hover:bg-[#6C4A52]",
-  blue: "bg-[#C5E8FF] hover:bg-[#87CEEB] dark:bg-[#2A3A4D] dark:hover:bg-[#3A4A5D]",
-  green: "bg-[#D4F5D4] hover:bg-[#90EE90] dark:bg-[#2A4D2A] dark:hover:bg-[#3A5D3A]",
-  purple: "bg-[#E8D5F2] hover:bg-[#DDA0DD] dark:bg-[#3D2A4D] dark:hover:bg-[#4D3A5D]",
-  orange: "bg-[#FFE4C9] hover:bg-[#FFD4A3] dark:bg-[#4D3A2A] dark:hover:bg-[#5D4A3A]",
-  white: "bg-white hover:bg-gray-50 dark:bg-[#2D2D2D] dark:hover:bg-[#3D3D3D]",
+// Light mode colors
+const lightColors = {
+  yellow: { bg: "#FFF3B0", hover: "#FFE566" },
+  pink: { bg: "#FFD6E0", hover: "#FFB6C1" },
+  blue: { bg: "#C5E8FF", hover: "#87CEEB" },
+  green: { bg: "#D4F5D4", hover: "#90EE90" },
+  purple: { bg: "#E8D5F2", hover: "#DDA0DD" },
+  orange: { bg: "#FFE4C9", hover: "#FFD4A3" },
+  white: { bg: "#FFFFFF", hover: "#F8F8F8" },
+};
+
+// Dark mode colors - More vibrant
+const darkColors = {
+  yellow: { bg: "#4A4530", hover: "#5A5540" },
+  pink: { bg: "#4D3540", hover: "#5D4550" },
+  blue: { bg: "#35404D", hover: "#45505D" },
+  green: { bg: "#354D35", hover: "#455D45" },
+  purple: { bg: "#453550", hover: "#554560" },
+  orange: { bg: "#4D4035", hover: "#5D5045" },
+  white: { bg: "#2A2A2A", hover: "#3A3A3A" },
 };
 
 const sizeVariants = {
@@ -38,31 +51,42 @@ export function RetroButton({
   className = "",
   type = "button"
 }: RetroButtonProps) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const colors = isDark ? darkColors[color] : lightColors[color];
+  const borderColor = isDark ? "#606060" : "#1A1A1A";
+  const shadowColor = isDark ? "#404040" : "#1A1A1A";
+
   return (
     <motion.button
       type={type}
       onClick={onClick}
       disabled={disabled}
       className={`
-        ${colorVariants[color]}
         ${sizeVariants[size]}
-        border-2 border-black dark:border-white/20 rounded-lg
-        font-kanit font-medium dark:text-white
-        shadow-hard-sm dark:shadow-none
+        rounded-lg
+        font-kanit font-medium
         transition-colors
         disabled:opacity-50 disabled:cursor-not-allowed
         cursor-pointer
+        ${isDark ? "text-white" : "text-black"}
         ${className}
       `}
+      style={{
+        backgroundColor: colors.bg,
+        border: `2px solid ${borderColor}`,
+        boxShadow: `2px 2px 0px ${shadowColor}`,
+      }}
       whileHover={!disabled ? { 
         x: -2, 
         y: -2,
-        boxShadow: "5px 5px 0px #1A1A1A"
+        backgroundColor: colors.hover,
+        boxShadow: `5px 5px 0px ${shadowColor}`
       } : {}}
       whileTap={!disabled ? { 
         x: 2, 
         y: 2,
-        boxShadow: "1px 1px 0px #1A1A1A"
+        boxShadow: `1px 1px 0px ${shadowColor}`
       } : {}}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >

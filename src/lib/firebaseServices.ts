@@ -46,9 +46,43 @@ export interface Todo {
   id: string;
   text: string;
   completed: boolean;
+  category: "homework" | "personal" | "other"; // ประเภท
+  subjectId?: string; // ถ้าเป็นการบ้านจะมี subjectId
+  subjectName?: string; // ชื่อวิชา (for display)
+  dueDate?: Date; // วันกำหนดส่ง
   userId: string;
   order: number;
   createdAt: Date;
+  completedAt?: Date;
+}
+
+export interface Flashcard {
+  id: string;
+  question: string;
+  answer: string;
+  subjectId: string;
+  userId: string;
+  // Spaced Repetition Data
+  easeFactor: number; // 2.5 default, ยิ่งสูงยิ่งง่าย
+  interval: number; // จำนวนวันก่อนทบทวนครั้งต่อไป
+  repetitions: number; // จำนวนครั้งที่ตอบถูกติดต่อกัน
+  nextReviewDate: Date; // วันที่ควรทบทวน
+  lastReviewDate?: Date;
+  correctCount: number;
+  wrongCount: number;
+  createdAt: Date;
+}
+
+export interface ReviewSession {
+  id: string;
+  userId: string;
+  subjectId?: string;
+  gameMode: "quiz" | "memory" | "speed";
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  duration: number; // seconds
+  completedAt: Date;
 }
 
 export interface Schedule {
@@ -57,7 +91,9 @@ export interface Schedule {
   startTime: string; // "08:00"
   endTime: string; // "09:00"
   subjectId: string;
+  subjectName?: string;
   room?: string;
+  teacher?: string;
   userId: string;
 }
 
@@ -217,7 +253,7 @@ export async function deleteHomework(homeworkId: string): Promise<void> {
 }
 
 // =====================
-// Todos
+// Todos (New System)
 // =====================
 
 export async function getTodos(userId: string): Promise<Todo[]> {
@@ -231,21 +267,36 @@ export async function getTodos(userId: string): Promise<Todo[]> {
     id: doc.id,
     ...doc.data(),
     createdAt: doc.data().createdAt?.toDate() || new Date(),
+    dueDate: doc.data().dueDate?.toDate(),
+    completedAt: doc.data().completedAt?.toDate(),
   })) as Todo[];
 }
 
 export async function createTodo(
   userId: string,
-  text: string,
-  order: number
+  data: {
+    text: string;
+    category: "homework" | "personal" | "other";
+    subjectId?: string;
+    subjectName?: string;
+    dueDate?: Date;
+    order: number;
+  }
 ): Promise<string> {
-  const docRef = await addDoc(collection(db, "todos"), {
-    text,
+  const cleanData: Record<string, unknown> = {
+    text: data.text,
+    category: data.category,
     completed: false,
     userId,
-    order,
+    order: data.order,
     createdAt: serverTimestamp(),
-  });
+  };
+  
+  if (data.subjectId) cleanData.subjectId = data.subjectId;
+  if (data.subjectName) cleanData.subjectName = data.subjectName;
+  if (data.dueDate) cleanData.dueDate = data.dueDate;
+  
+  const docRef = await addDoc(collection(db, "todos"), cleanData);
   return docRef.id;
 }
 
@@ -253,11 +304,162 @@ export async function updateTodo(
   todoId: string,
   data: Partial<Todo>
 ): Promise<void> {
-  await updateDoc(doc(db, "todos", todoId), data);
+  const updateData: Record<string, unknown> = { ...data };
+  if (data.completed) {
+    updateData.completedAt = serverTimestamp();
+  }
+  await updateDoc(doc(db, "todos", todoId), updateData);
 }
 
 export async function deleteTodo(todoId: string): Promise<void> {
   await deleteDoc(doc(db, "todos", todoId));
+}
+
+// =====================
+// Flashcards (Review System)
+// =====================
+
+export async function getFlashcards(userId: string, subjectId?: string): Promise<Flashcard[]> {
+  let q;
+  if (subjectId) {
+    q = query(
+      collection(db, "flashcards"),
+      where("userId", "==", userId),
+      where("subjectId", "==", subjectId)
+    );
+  } else {
+    q = query(
+      collection(db, "flashcards"),
+      where("userId", "==", userId)
+    );
+  }
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: doc.data().createdAt?.toDate() || new Date(),
+    nextReviewDate: doc.data().nextReviewDate?.toDate() || new Date(),
+    lastReviewDate: doc.data().lastReviewDate?.toDate(),
+  })) as Flashcard[];
+}
+
+export async function getFlashcardsDueForReview(userId: string): Promise<Flashcard[]> {
+  const now = new Date();
+  const q = query(
+    collection(db, "flashcards"),
+    where("userId", "==", userId),
+    where("nextReviewDate", "<=", now)
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: doc.data().createdAt?.toDate() || new Date(),
+    nextReviewDate: doc.data().nextReviewDate?.toDate() || new Date(),
+    lastReviewDate: doc.data().lastReviewDate?.toDate(),
+  })) as Flashcard[];
+}
+
+export async function createFlashcard(
+  userId: string,
+  data: { question: string; answer: string; subjectId: string }
+): Promise<string> {
+  const docRef = await addDoc(collection(db, "flashcards"), {
+    question: data.question,
+    answer: data.answer,
+    subjectId: data.subjectId,
+    userId,
+    easeFactor: 2.5,
+    interval: 1,
+    repetitions: 0,
+    nextReviewDate: new Date(),
+    correctCount: 0,
+    wrongCount: 0,
+    createdAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+// SM-2 Spaced Repetition Algorithm
+export async function updateFlashcardAfterReview(
+  flashcardId: string,
+  quality: number // 0-5: 0=blackout, 5=perfect
+): Promise<void> {
+  const docRef = doc(db, "flashcards", flashcardId);
+  const docSnap = await getDoc(docRef);
+  
+  if (!docSnap.exists()) return;
+  
+  const card = docSnap.data();
+  let { easeFactor, interval, repetitions, correctCount, wrongCount } = card;
+  
+  if (quality >= 3) {
+    // Correct answer
+    correctCount++;
+    if (repetitions === 0) {
+      interval = 1;
+    } else if (repetitions === 1) {
+      interval = 6;
+    } else {
+      interval = Math.round(interval * easeFactor);
+    }
+    repetitions++;
+  } else {
+    // Wrong answer
+    wrongCount++;
+    repetitions = 0;
+    interval = 1;
+  }
+  
+  // Update ease factor
+  easeFactor = Math.max(1.3, easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
+  
+  const nextReviewDate = new Date();
+  nextReviewDate.setDate(nextReviewDate.getDate() + interval);
+  
+  await updateDoc(docRef, {
+    easeFactor,
+    interval,
+    repetitions,
+    nextReviewDate,
+    lastReviewDate: serverTimestamp(),
+    correctCount,
+    wrongCount,
+  });
+}
+
+export async function deleteFlashcard(flashcardId: string): Promise<void> {
+  await deleteDoc(doc(db, "flashcards", flashcardId));
+}
+
+// =====================
+// Review Sessions
+// =====================
+
+export async function saveReviewSession(
+  userId: string,
+  data: Omit<ReviewSession, "id" | "userId" | "completedAt">
+): Promise<string> {
+  const docRef = await addDoc(collection(db, "reviewSessions"), {
+    ...data,
+    userId,
+    completedAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+export async function getReviewSessions(userId: string, limit = 10): Promise<ReviewSession[]> {
+  const q = query(
+    collection(db, "reviewSessions"),
+    where("userId", "==", userId),
+    orderBy("completedAt", "desc")
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.slice(0, limit).map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    completedAt: doc.data().completedAt?.toDate() || new Date(),
+  })) as ReviewSession[];
 }
 
 // =====================
@@ -266,7 +468,7 @@ export async function deleteTodo(todoId: string): Promise<void> {
 
 export async function getSchedule(userId: string): Promise<Schedule[]> {
   const q = query(
-    collection(db, "schedule"),
+    collection(db, "schedules"),
     where("userId", "==", userId)
   );
   const snapshot = await getDocs(q);
@@ -281,7 +483,7 @@ export async function getScheduleByDay(
   dayOfWeek: number
 ): Promise<Schedule[]> {
   const q = query(
-    collection(db, "schedule"),
+    collection(db, "schedules"),
     where("userId", "==", userId),
     where("dayOfWeek", "==", dayOfWeek)
   );
@@ -296,10 +498,15 @@ export async function createScheduleItem(
   userId: string,
   data: Omit<Schedule, "id" | "userId">
 ): Promise<string> {
-  const docRef = await addDoc(collection(db, "schedule"), {
-    ...data,
-    userId,
+  // Filter out undefined values (Firestore doesn't accept undefined)
+  const cleanData: Record<string, unknown> = { userId };
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined) {
+      cleanData[key] = value;
+    }
   });
+  
+  const docRef = await addDoc(collection(db, "schedules"), cleanData);
   return docRef.id;
 }
 
@@ -307,11 +514,18 @@ export async function updateScheduleItem(
   scheduleId: string,
   data: Partial<Schedule>
 ): Promise<void> {
-  await updateDoc(doc(db, "schedule", scheduleId), data);
+  // Filter out undefined values
+  const cleanData: Record<string, unknown> = {};
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined) {
+      cleanData[key] = value;
+    }
+  });
+  await updateDoc(doc(db, "schedules", scheduleId), cleanData);
 }
 
 export async function deleteScheduleItem(scheduleId: string): Promise<void> {
-  await deleteDoc(doc(db, "schedule", scheduleId));
+  await deleteDoc(doc(db, "schedules", scheduleId));
 }
 
 // =====================

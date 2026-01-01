@@ -30,7 +30,7 @@ interface TutorialStep {
 const tutorialSteps: TutorialStep[] = [
   {
     id: "welcome",
-    title: "ยินดีต้อนรับสู่ Studygram! 🎉",
+    title: "ยินดีต้อนรับสู่ studyblog! 🎉",
     description: "แอปผู้ช่วยจัดการการเรียนสไตล์ Y2K ที่จะทำให้การเรียนของคุณเป็นเรื่องสนุก",
     icon: <GraduationCap className="w-12 h-12" />,
     color: "yellow",

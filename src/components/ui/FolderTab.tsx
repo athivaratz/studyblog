@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface FolderTabProps {
   label: string;
@@ -11,13 +12,22 @@ interface FolderTabProps {
   icon?: ReactNode;
 }
 
-const colorVariants: Record<string, string> = {
-  yellow: "bg-[#FFF3B0] dark:bg-[#4D4A2A]",
-  pink: "bg-[#FFD6E0] dark:bg-[#5C3A42]",
-  blue: "bg-[#C5E8FF] dark:bg-[#2A3A4D]",
-  green: "bg-[#D4F5D4] dark:bg-[#2A4D2A]",
-  purple: "bg-[#E8D5F2] dark:bg-[#3D2A4D]",
-  orange: "bg-[#FFE4C9] dark:bg-[#4D3A2A]",
+const lightColors: Record<string, string> = {
+  yellow: "#FFF3B0",
+  pink: "#FFD6E0",
+  blue: "#C5E8FF",
+  green: "#D4F5D4",
+  purple: "#E8D5F2",
+  orange: "#FFE4C9",
+};
+
+const darkColors: Record<string, string> = {
+  yellow: "#4D4A2A",
+  pink: "#5C3A42",
+  blue: "#2A3A4D",
+  green: "#2A4D2A",
+  purple: "#3D2A4D",
+  orange: "#4D3A2A",
 };
 
 export function FolderTab({ 
@@ -27,17 +37,23 @@ export function FolderTab({
   onClick,
   icon 
 }: FolderTabProps) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  
+  const bgColor = isDark ? (darkColors[color] || darkColors.yellow) : (lightColors[color] || lightColors.yellow);
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#000000";
+  const textColor = isDark ? "#FFFFFF" : "#000000";
+
   return (
     <motion.button
       onClick={onClick}
-      className={`
-        relative px-3 py-2 lg:px-6 lg:py-3 rounded-t-xl
-        border-2 border-black dark:border-white/20 border-b-0
-        font-kanit font-medium text-xs lg:text-sm
-        transition-colors cursor-pointer dark:text-white
-        ${colorVariants[color] || colorVariants.yellow}
-        ${isActive ? "z-10" : "z-0"}
-      `}
+      className="relative px-3 py-2 lg:px-6 lg:py-3 rounded-t-xl border-2 border-b-0 font-kanit font-medium text-xs lg:text-sm transition-colors cursor-pointer"
+      style={{ 
+        backgroundColor: bgColor, 
+        borderColor, 
+        color: textColor,
+        zIndex: isActive ? 10 : 0
+      }}
       initial={false}
       animate={{
         y: isActive ? -6 : 0,
@@ -54,11 +70,11 @@ export function FolderTab({
       
       {/* Tab shadow effect */}
       <div 
-        className={`
-          absolute -bottom-[2px] left-0 right-0 h-[4px]
-          ${colorVariants[color] || colorVariants.yellow}
-          ${isActive ? "opacity-100" : "opacity-0"}
-        `}
+        className="absolute -bottom-[2px] left-0 right-0 h-[4px]"
+        style={{ 
+          backgroundColor: bgColor,
+          opacity: isActive ? 1 : 0
+        }}
       />
     </motion.button>
   );

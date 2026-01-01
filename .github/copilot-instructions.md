@@ -1,7 +1,7 @@
-# Studygram - AI Coding Instructions
+# studyblog - AI Coding Instructions
 
 ## Overview
-Studygram is a **Y2K-aesthetic academic organizer PWA** built with Next.js 16, React 19, Firebase, and Tailwind CSS 4. It targets Thai students with a nostalgic paper/folder visual design. All UI text is in Thai.
+studyblog is a **Y2K-aesthetic academic organizer PWA** built with Next.js 16, React 19, Firebase, and Tailwind CSS 4. It targets Thai students with a nostalgic paper/folder visual design. All UI text is in Thai.
 
 ## Architecture
 

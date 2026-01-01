@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
+import { useTheme } from "@/contexts";
 
 interface PaperCardProps {
   children: ReactNode;
@@ -11,14 +12,26 @@ interface PaperCardProps {
   onClick?: () => void;
 }
 
-const bgColors = {
-  white: "bg-[#FFFEF9] dark:bg-[#2D2D2D]",
-  cream: "bg-[#FFF8E7] dark:bg-[#333333]",
-  yellow: "bg-[#FFF3B0] dark:bg-[#4D4A2A]",
-  pink: "bg-[#FFD6E0] dark:bg-[#5C3A42]",
-  blue: "bg-[#C5E8FF] dark:bg-[#2A3A4D]",
-  green: "bg-[#D4F5D4] dark:bg-[#2A4D2A]",
-  purple: "bg-[#E8D5F2] dark:bg-[#3D2A4D]",
+// Light mode colors
+const lightColors = {
+  white: "#FFFEF9",
+  cream: "#FFF8E7",
+  yellow: "#FFF3B0",
+  pink: "#FFD6E0",
+  blue: "#C5E8FF",
+  green: "#D4F5D4",
+  purple: "#E8D5F2",
+};
+
+// Dark mode colors - More vibrant
+const darkColors = {
+  white: "#2A2A2A",
+  cream: "#302D28",
+  yellow: "#4A4530",
+  pink: "#4D3540",
+  blue: "#35404D",
+  green: "#354D35",
+  purple: "#453550",
 };
 
 export function PaperCard({ 
@@ -28,23 +41,33 @@ export function PaperCard({
   color = "white",
   onClick
 }: PaperCardProps) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const bgColor = isDark ? darkColors[color] : lightColors[color];
+  const borderColor = isDark ? "#606060" : "#1A1A1A";
+  const shadowColor = isDark ? "#404040" : "#1A1A1A";
+  const textureClass = isDark ? "paper-texture-dark" : "paper-texture";
+
   return (
     <motion.div
       onClick={onClick}
       className={`
-        ${bgColors[color]}
-        border-2 border-black dark:border-white/20 rounded-xl
-        shadow-hard dark:shadow-none p-4 lg:p-6
-        paper-texture dark:paper-texture-dark
+        rounded-xl p-4 lg:p-6
+        ${textureClass}
         ${onClick ? "cursor-pointer" : ""}
         ${className}
       `}
+      style={{
+        backgroundColor: bgColor,
+        border: `2px solid ${borderColor}`,
+        boxShadow: `4px 4px 0px ${shadowColor}`,
+      }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0, rotate }}
       whileHover={onClick ? { 
         scale: 1.02, 
         rotate: rotate * 0.5,
-        boxShadow: "6px 6px 0px #1A1A1A"
+        boxShadow: `6px 6px 0px ${shadowColor}`
       } : {}}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >

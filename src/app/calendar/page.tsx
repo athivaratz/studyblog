@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { DesktopLayout, Navbar } from "@/components/layout";
 import { RetroButton, AddScheduleModal } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useSchedule, useSubjects } from "@/hooks/useFirebaseData";
 import { 
@@ -30,12 +31,24 @@ const bgColors: Record<string, string> = {
 
 export default function CalendarPage() {
   const { user, loading: authLoading } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedDayForAdd, setSelectedDayForAdd] = useState(1); // Default Monday
   
   // Fetch ALL schedule items (no day filter)
   const { schedule, loading: scheduleLoading, addScheduleItem, removeScheduleItem } = useSchedule();
   const { subjects } = useSubjects();
+
+  const pageBg = isDark ? "#1A1A1A" : "#FFF8E7";
+  const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
+  const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
+  const textSubtle = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
+  const textFaint = isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#1A1A1A";
+  const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
+  const emptyBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
+  const emptyBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
 
   // Group schedule by day
   const scheduleByDay = useMemo(() => {
@@ -54,7 +67,10 @@ export default function CalendarPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#FFF8E7] dark:bg-[#1A1A1A] flex items-center justify-center">
+      <div 
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: pageBg }}
+      >
         <Loader2 className="w-8 h-8 animate-spin text-[#FF6B6B]" />
       </div>
     );
@@ -78,7 +94,7 @@ export default function CalendarPage() {
         <Navbar />
 
         <div className="flex items-center justify-between px-2">
-             <h2 className="font-felipa text-3xl flex items-center gap-2 dark:text-white">
+             <h2 className="font-felipa text-3xl flex items-center gap-2" style={{ color: textColor }}>
                   <CalendarIcon className="w-7 h-7 text-[#FF6B6B]" />
                   ตารางเรียน
              </h2>
@@ -100,10 +116,14 @@ export default function CalendarPage() {
                   >
                       {/* Day Header */}
                       <div 
-                        className="p-3 rounded-xl border-2 border-black dark:border-white/20 flex items-center justify-between shadow-hard-sm"
-                        style={{ backgroundColor: dayColors[dayIndex] }}
+                        className="p-3 rounded-xl border-2 flex items-center justify-between"
+                        style={{ 
+                          backgroundColor: dayColors[dayIndex], 
+                          borderColor: borderColor,
+                          boxShadow: isDark ? "none" : "3px 3px 0px #1A1A1A"
+                        }}
                       >
-                          <span className="font-kanit font-bold text-lg text-black/80">
+                          <span className="font-kanit font-bold text-lg" style={{ color: "rgba(0,0,0,0.8)" }}>
                             {dayNamesFull[dayIndex]}
                           </span>
                           <RetroButton size="sm" color="white" onClick={() => handleAddClick(dayIndex)}>
@@ -118,7 +138,8 @@ export default function CalendarPage() {
                               return (
                                   <motion.div 
                                       key={item.id}
-                                      className="bg-white dark:bg-[#2D2D2D] border-2 border-black dark:border-white/20 rounded-xl p-3 relative group shadow-sm hover:shadow-md transition-all"
+                                      className="border-2 rounded-xl p-3 relative group shadow-sm hover:shadow-md transition-all"
+                                      style={{ backgroundColor: cardBg, borderColor: borderColor }}
                                       whileHover={{ scale: 1.02 }}
                                   >
                                       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -129,7 +150,7 @@ export default function CalendarPage() {
                                                   removeScheduleItem(item.id);
                                                 }
                                               }}
-                                              className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-1.5 rounded-lg transition-colors"
+                                              className="text-red-500 p-1.5 rounded-lg transition-colors hover:opacity-70"
                                           >
                                               <Trash2 className="w-3 h-3" />
                                           </button>
@@ -137,19 +158,31 @@ export default function CalendarPage() {
                                       
                                       <div className="flex items-start gap-3">
                                           <div 
-                                              className="w-2 self-stretch rounded-full border border-black/10" 
-                                              style={{ backgroundColor: bgColors[subject?.color || "yellow"] }}
+                                              className="w-2 self-stretch rounded-full border" 
+                                              style={{ 
+                                                backgroundColor: bgColors[subject?.color || "yellow"],
+                                                borderColor: "rgba(0,0,0,0.1)"
+                                              }}
                                           />
                                           <div className="flex-1 min-w-0">
-                                              <h4 className="font-kanit font-semibold text-sm dark:text-white truncate pr-6">
+                                              <h4 
+                                                className="font-kanit font-semibold text-sm truncate pr-6"
+                                                style={{ color: textColor }}
+                                              >
                                                   {subject?.name || "ไม่ระบุวิชา"}
                                               </h4>
-                                              <div className="flex items-center gap-1.5 text-xs text-black/60 dark:text-white/60 mt-1.5">
+                                              <div 
+                                                className="flex items-center gap-1.5 text-xs mt-1.5"
+                                                style={{ color: textMuted }}
+                                              >
                                                   <Clock className="w-3 h-3" />
                                                   <span className="font-mono">{item.startTime} - {item.endTime}</span>
                                               </div>
                                               {item.room && (
-                                                  <div className="flex items-center gap-1.5 text-xs text-black/50 dark:text-white/50 mt-1">
+                                                  <div 
+                                                    className="flex items-center gap-1.5 text-xs mt-1"
+                                                    style={{ color: textSubtle }}
+                                                  >
                                                       <MapPin className="w-3 h-3" />
                                                       <span className="truncate">{item.room}</span>
                                                   </div>
@@ -160,8 +193,11 @@ export default function CalendarPage() {
                               )
                           })}
                           {scheduleByDay[dayIndex].length === 0 && (
-                              <div className="h-full flex items-center justify-center py-8 border-2 border-dashed border-black/10 dark:border-white/10 rounded-xl bg-black/5 dark:bg-white/5">
-                                  <p className="text-xs text-black/40 dark:text-white/40 font-kanit">ไม่มีเรียน</p>
+                              <div 
+                                className="h-full flex items-center justify-center py-8 border-2 border-dashed rounded-xl"
+                                style={{ borderColor: emptyBorder, backgroundColor: emptyBg }}
+                              >
+                                  <p className="text-xs font-kanit" style={{ color: textFaint }}>ไม่มีเรียน</p>
                               </div>
                           )}
                       </div>

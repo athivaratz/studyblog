@@ -2,12 +2,15 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useTheme } from "@/contexts";
 
 interface ClockWidgetProps {
   className?: string;
 }
 
 export function ClockWidget({ className = "" }: ClockWidgetProps) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -25,20 +28,32 @@ export function ClockWidget({ className = "" }: ClockWidgetProps) {
   const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
   const monthNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 
+  // Theme-aware colors
+  const bgColor = isDark ? "#1A1A1A" : "#2D2D2D";
+  const borderColor = isDark ? "#606060" : "#1A1A1A";
+  const shadowColor = isDark ? "#404040" : "#1A1A1A";
+  const screenBg = isDark ? "#0D2818" : "#0A1F14";
+
   return (
     <motion.div
-      className={`
-        bg-[#1A1A1A] border-3 border-black rounded-2xl
-        p-5 w-[200px]
-        shadow-hard
-        ${className}
-      `}
+      className={`rounded-2xl p-5 w-[200px] ${className}`}
+      style={{
+        backgroundColor: bgColor,
+        border: `3px solid ${borderColor}`,
+        boxShadow: `4px 4px 0px ${shadowColor}`,
+      }}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
       {/* Digital display */}
-      <div className="bg-[#0D2818] border-2 border-black rounded-lg p-3 mb-3">
+      <div 
+        className="rounded-lg p-3 mb-3"
+        style={{
+          backgroundColor: screenBg,
+          border: `2px solid ${borderColor}`,
+        }}
+      >
         <div className="flex items-center justify-center gap-1">
           <span className="font-mono text-3xl text-[#39FF14] font-bold tracking-wider">
             {hours}

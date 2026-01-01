@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
+import { useTheme } from "@/contexts";
 
 interface StickyNoteProps {
   children: ReactNode;
@@ -10,13 +11,24 @@ interface StickyNoteProps {
   className?: string;
 }
 
-const colorVariants = {
-  yellow: "bg-[#FFF3B0]",
-  pink: "bg-[#FFD6E0]",
-  blue: "bg-[#C5E8FF]",
-  green: "bg-[#D4F5D4]",
-  purple: "bg-[#E8D5F2]",
-  orange: "bg-[#FFE4C9]",
+// Light mode colors
+const lightColors = {
+  yellow: "#FFF3B0",
+  pink: "#FFD6E0",
+  blue: "#C5E8FF",
+  green: "#D4F5D4",
+  purple: "#E8D5F2",
+  orange: "#FFE4C9",
+};
+
+// Dark mode colors - More saturated
+const darkColors = {
+  yellow: "#4A4530",
+  pink: "#4D3540",
+  blue: "#35404D",
+  green: "#354D35",
+  purple: "#453550",
+  orange: "#4D4035",
 };
 
 export function StickyNote({ 
@@ -25,29 +37,44 @@ export function StickyNote({
   rotate = -2,
   className = ""
 }: StickyNoteProps) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const bgColor = isDark ? darkColors[color] : lightColors[color];
+  const borderColor = isDark ? "#606060" : "#1A1A1A";
+  const shadowColor = isDark ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0.15)";
+  const tapeColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.6)";
+  const tapeBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.2)";
+
   return (
     <motion.div
       className={`
-        ${colorVariants[color]}
-        border-2 border-black
         p-4 min-w-[180px]
-        font-kanit
+        font-kanit relative
+        ${isDark ? "text-white" : "text-black"}
         ${className}
       `}
+      style={{
+        backgroundColor: bgColor,
+        border: `2px solid ${borderColor}`,
+        boxShadow: `4px 4px 8px ${shadowColor}`,
+      }}
       initial={{ opacity: 0, scale: 0.8, rotate: rotate - 5 }}
       animate={{ opacity: 1, scale: 1, rotate }}
       whileHover={{ 
         scale: 1.05, 
         rotate: 0,
-        boxShadow: "6px 6px 12px rgba(0,0,0,0.2)"
+        boxShadow: `6px 6px 12px ${shadowColor}`
       }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      style={{
-        boxShadow: "4px 4px 8px rgba(0,0,0,0.15)"
-      }}
     >
       {/* Tape effect on top */}
-      <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-4 bg-white/60 border border-black/20 rounded-sm" />
+      <div 
+        className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-4 rounded-sm"
+        style={{
+          backgroundColor: tapeColor,
+          border: `1px solid ${tapeBorder}`,
+        }}
+      />
       
       {children}
     </motion.div>

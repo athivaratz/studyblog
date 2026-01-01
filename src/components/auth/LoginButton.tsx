@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts";
 import { LogIn, LogOut, User, Loader2 } from "lucide-react";
 
 interface LoginButtonProps {
@@ -11,11 +12,21 @@ interface LoginButtonProps {
 
 export function LoginButton({ className = "", variant = "full" }: LoginButtonProps) {
   const { user, userProfile, loading, signInWithGoogle, signOut } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  
+  // Theme-aware colors
+  const primaryColor = "#00568C";
+  const borderColor = primaryColor;
+  const shadowColor = isDark ? "#404040" : primaryColor;
+  const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
+  const textMuted = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
+  const avatarBg = primaryColor;
 
   if (loading) {
     return (
       <div className={`flex items-center justify-center ${className}`}>
-        <Loader2 className="w-5 h-5 animate-spin text-black/50 dark:text-white/50" />
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: textMuted }} />
       </div>
     );
   }
@@ -33,19 +44,26 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
               <img
                 src={user.photoURL}
                 alt={user.displayName || "User"}
-                className="w-8 h-8 rounded-full border-2 border-black dark:border-white/30"
+                className="w-8 h-8 rounded-full"
+                style={{ border: `2px solid ${borderColor}` }}
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full border-2 border-black dark:border-white/30 bg-[#FFE066] dark:bg-[#4D4A2A] flex items-center justify-center">
-                <User className="w-4 h-4 dark:text-white" />
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ 
+                  border: `2px solid ${borderColor}`,
+                  backgroundColor: avatarBg,
+                }}
+              >
+                <User className="w-4 h-4" style={{ color: textColor }} />
               </div>
             )}
             <div className="hidden md:block">
-              <p className="font-kanit text-sm font-medium leading-tight dark:text-white">
+              <p className="font-kanit text-sm font-medium leading-tight" style={{ color: textColor }}>
                 {userProfile?.displayName || user.displayName || "ผู้ใช้"}
               </p>
-              <p className="font-kanit text-xs text-black/50 dark:text-white/50">
+              <p className="font-kanit text-xs" style={{ color: textMuted }}>
                 {userProfile?.school || "ยินดีต้อนรับ!"}
               </p>
             </div>
@@ -54,12 +72,12 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
         
         <motion.button
           onClick={signOut}
-          className={`
-            flex items-center gap-2 px-2 lg:px-3 py-1.5 lg:py-2
-            bg-[#FF6B6B] border-2 border-black dark:border-white/30 rounded-lg
-            font-kanit text-sm text-white font-medium
-            shadow-hard-sm dark:shadow-none cursor-pointer
-          `}
+          className="flex items-center gap-2 px-2 lg:px-3 py-1.5 lg:py-2 rounded-lg font-kanit text-sm text-white font-medium cursor-pointer"
+          style={{
+            backgroundColor: "#FF6B6B",
+            border: `2px solid ${borderColor}`,
+            boxShadow: `2px 2px 0px ${shadowColor}`,
+          }}
           whileHover={{ scale: 1.02, y: -1 }}
           whileTap={{ scale: 0.98 }}
         >
@@ -73,13 +91,13 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
   return (
     <motion.button
       onClick={signInWithGoogle}
-      className={`
-        flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2
-        bg-white dark:bg-[#2D2D2D] border-2 border-black dark:border-white/30 rounded-lg
-        font-kanit text-xs lg:text-sm font-medium dark:text-white
-        shadow-hard-sm dark:shadow-none cursor-pointer
-        ${className}
-      `}
+      className={`flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg font-kanit text-xs lg:text-sm font-medium cursor-pointer ${className}`}
+      style={{
+        backgroundColor: isDark ? "#2D2D2D" : "#FFFFFF",
+        border: `2px solid ${borderColor}`,
+        boxShadow: `2px 2px 0px ${shadowColor}`,
+        color: textColor,
+      }}
       whileHover={{ scale: 1.02, y: -1 }}
       whileTap={{ scale: 0.98 }}
       initial={{ opacity: 0, x: 20 }}

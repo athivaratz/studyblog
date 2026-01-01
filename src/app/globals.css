@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* ================================================
+   RESPONSIVE BREAKPOINTS SYSTEM
+   ================================================
+   Mobile:  < 640px  (default/base styles)
+   Tablet:  640px - 1023px (sm: and md:)
+   Desktop: >= 1024px (lg: and xl:)
+   ================================================ */
+
 :root {
   /* Y2K Pastel Color Palette */
   --pastel-yellow: #FFF3B0;
@@ -20,26 +28,127 @@
   --accent-red: #FF6B6B;
   --accent-blue: #4ECDC4;
   --accent-yellow: #FFE66D;
+
+  /* ================================================
+     RESPONSIVE SPACING SYSTEM
+     ================================================ */
+  --spacing-page-x: 1rem;      /* Mobile: 16px */
+  --spacing-page-y: 0.5rem;    /* Mobile: 8px */
+  --spacing-card: 1rem;        /* Mobile: 16px */
+  --spacing-gap: 0.75rem;      /* Mobile: 12px */
+
+  /* ================================================
+     RESPONSIVE TYPOGRAPHY
+     ================================================ */
+  --text-heading-1: 1.5rem;    /* Mobile: 24px */
+  --text-heading-2: 1.25rem;   /* Mobile: 20px */
+  --text-heading-3: 1rem;      /* Mobile: 16px */
+  --text-body: 0.875rem;       /* Mobile: 14px */
+  --text-small: 0.75rem;       /* Mobile: 12px */
+
+  /* ================================================
+     RESPONSIVE COMPONENT SIZES
+     ================================================ */
+  --size-icon-sm: 1rem;        /* Mobile: 16px */
+  --size-icon-md: 1.25rem;     /* Mobile: 20px */
+  --size-icon-lg: 1.5rem;      /* Mobile: 24px */
+  --size-button-height: 2.5rem; /* Mobile: 40px */
+  --size-input-height: 2.75rem; /* Mobile: 44px */
+  --size-nav-icon: 2rem;       /* Mobile: 32px */
 }
 
-/* Dark Mode */
+/* ================================================
+   TABLET BREAKPOINT (640px - 1023px)
+   ================================================ */
+@media (min-width: 640px) {
+  :root {
+    --spacing-page-x: 1.5rem;    /* Tablet: 24px */
+    --spacing-page-y: 1rem;      /* Tablet: 16px */
+    --spacing-card: 1.25rem;     /* Tablet: 20px */
+    --spacing-gap: 1rem;         /* Tablet: 16px */
+
+    --text-heading-1: 1.75rem;   /* Tablet: 28px */
+    --text-heading-2: 1.5rem;    /* Tablet: 24px */
+    --text-heading-3: 1.125rem;  /* Tablet: 18px */
+    --text-body: 1rem;           /* Tablet: 16px */
+    --text-small: 0.875rem;      /* Tablet: 14px */
+
+    --size-icon-sm: 1.125rem;    /* Tablet: 18px */
+    --size-icon-md: 1.5rem;      /* Tablet: 24px */
+    --size-icon-lg: 1.75rem;     /* Tablet: 28px */
+    --size-button-height: 2.75rem; /* Tablet: 44px */
+    --size-input-height: 3rem;   /* Tablet: 48px */
+    --size-nav-icon: 2.5rem;     /* Tablet: 40px */
+  }
+}
+
+/* ================================================
+   DESKTOP BREAKPOINT (>= 1280px) - Increased for iPad Pro
+   ================================================ */
+@media (min-width: 1280px) {
+  :root {
+    --spacing-page-x: 2rem;      /* Desktop: 32px */
+    --spacing-page-y: 1rem;      /* Desktop: 16px */
+    --spacing-card: 1.5rem;      /* Desktop: 24px */
+    --spacing-gap: 1.5rem;       /* Desktop: 24px */
+
+    --text-heading-1: 2rem;      /* Desktop: 32px */
+    --text-heading-2: 1.75rem;   /* Desktop: 28px */
+    --text-heading-3: 1.25rem;   /* Desktop: 20px */
+    --text-body: 1rem;           /* Desktop: 16px */
+    --text-small: 0.875rem;      /* Desktop: 14px */
+
+    --size-icon-sm: 1.25rem;     /* Desktop: 20px */
+    --size-icon-md: 1.5rem;      /* Desktop: 24px */
+    --size-icon-lg: 2rem;        /* Desktop: 32px */
+    --size-button-height: 3rem;  /* Desktop: 48px */
+    --size-input-height: 3.25rem; /* Desktop: 52px */
+    --size-nav-icon: 3rem;       /* Desktop: 48px */
+  }
+}
+
+/* ================================================
+   PORTRAIT MODE OVERRIDE
+   For devices like iPad Pro (1024x1366) in portrait
+   Force tablet-like spacing even if width >= 1024px
+   ================================================ */
+@media (min-width: 1024px) and (orientation: portrait) {
+  :root {
+    --spacing-page-x: 1.5rem;    /* Tablet spacing */
+    --spacing-page-y: 1rem;
+    --spacing-card: 1.25rem;
+    --spacing-gap: 1rem;
+  }
+}
+
+/* Dark Mode - Neo-Brutalism Enhanced */
 .dark {
-  --pastel-yellow: #3D3A2A;
-  --pastel-pink: #3D2A30;
-  --pastel-blue: #2A3540;
-  --pastel-green: #2A3D2A;
-  --pastel-purple: #352A3D;
-  --pastel-orange: #3D3528;
-  --pastel-cream: #2D2A25;
+  /* Dark pastels - More vibrant for better visibility */
+  --pastel-yellow: #4A4530;
+  --pastel-pink: #4D3540;
+  --pastel-blue: #35404D;
+  --pastel-green: #354D35;
+  --pastel-purple: #453550;
+  --pastel-orange: #4D4035;
+  --pastel-cream: #353530;
   
+  /* Core colors */
   --background: #1A1A1A;
-  --foreground: #F5F5F5;
-  --paper-white: #2D2D2D;
-  --border-black: #4A4A4A;
+  --foreground: #FAFAFA;
+  --paper-white: #252525;
   
-  --accent-red: #FF8080;
-  --accent-blue: #6EDDD4;
-  --accent-yellow: #FFE88A;
+  /* Neo-brutalism dark border - Use colored borders for more pop */
+  --border-black: #505050;
+  --border-highlight: #707070;
+  
+  /* Accent colors - Brighter in dark mode */
+  --accent-red: #FF8A8A;
+  --accent-blue: #7EEEE5;
+  --accent-yellow: #FFEC8A;
+  
+  /* Dark mode shadow color */
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --shadow-highlight: rgba(255, 255, 255, 0.05);
 }
 
 @theme inline {
@@ -58,7 +167,7 @@
   font-family: var(--font-kanit), sans-serif;
 }
 
-/* Hard Shadow Utility */
+/* Hard Shadow Utility - Neo-Brutalism Style */
 .shadow-hard {
   box-shadow: 4px 4px 0px var(--border-black);
 }
@@ -69,6 +178,25 @@
 
 .shadow-hard-lg {
   box-shadow: 6px 6px 0px var(--border-black);
+}
+
+/* Dark mode shadows - Subtle glow effect for depth */
+.dark .shadow-hard {
+  box-shadow: 
+    4px 4px 0px var(--border-black),
+    0 0 20px rgba(255, 255, 255, 0.03);
+}
+
+.dark .shadow-hard-sm {
+  box-shadow: 
+    2px 2px 0px var(--border-black),
+    0 0 10px rgba(255, 255, 255, 0.02);
+}
+
+.dark .shadow-hard-lg {
+  box-shadow: 
+    6px 6px 0px var(--border-black),
+    0 0 30px rgba(255, 255, 255, 0.04);
 }
 
 /* Paper Texture */
@@ -151,17 +279,23 @@
   box-shadow: none;
 }
 
-/* Dark mode shadow fix */
-.dark .shadow-hard {
-  box-shadow: none;
+/* Dark mode neo-brutalism enhancements */
+.dark .neo-card {
+  box-shadow: 
+    4px 4px 0px var(--border-black),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.dark .shadow-hard-sm {
-  box-shadow: none;
+.dark .retro-btn {
+  box-shadow: 3px 3px 0px var(--border-black);
 }
 
-.dark .shadow-hard-lg {
-  box-shadow: none;
+.dark .retro-btn:hover {
+  box-shadow: 4px 4px 0px var(--border-black);
+}
+
+.dark .retro-btn:active {
+  box-shadow: 1px 1px 0px var(--border-black);
 }
 
 body {
@@ -190,3 +324,146 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--pastel-purple);
 }
+
+/* ================================================
+   RESPONSIVE UTILITY CLASSES
+   ================================================ */
+
+/* === MOBILE ONLY (< 640px) === */
+.mobile-only {
+  display: block;
+}
+@media (min-width: 640px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+/* === TABLET ONLY (640px - 1023px) === */
+.tablet-only {
+  display: none;
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .tablet-only {
+    display: block !important;
+  }
+}
+
+/* === DESKTOP ONLY (>= 1024px) === */
+.desktop-only {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .desktop-only {
+    display: block !important;
+  }
+}
+
+/* === MOBILE + TABLET (< 1024px) === */
+.mobile-tablet {
+  display: block;
+}
+@media (min-width: 1024px) {
+  .mobile-tablet {
+    display: none !important;
+  }
+}
+
+/* === TABLET + DESKTOP (>= 640px) === */
+.tablet-desktop {
+  display: none;
+}
+@media (min-width: 640px) {
+  .tablet-desktop {
+    display: block !important;
+  }
+}
+
+/* ================================================
+   RESPONSIVE TYPOGRAPHY UTILITIES
+   ================================================ */
+.heading-responsive {
+  font-size: var(--text-heading-1);
+}
+
+.subheading-responsive {
+  font-size: var(--text-heading-2);
+}
+
+.body-responsive {
+  font-size: var(--text-body);
+}
+
+.small-responsive {
+  font-size: var(--text-small);
+}
+
+/* ================================================
+   RESPONSIVE SPACING UTILITIES
+   ================================================ */
+.page-padding {
+  padding-left: var(--spacing-page-x);
+  padding-right: var(--spacing-page-x);
+  padding-top: var(--spacing-page-y);
+  padding-bottom: var(--spacing-page-y);
+}
+
+.card-padding {
+  padding: var(--spacing-card);
+}
+
+.responsive-gap {
+  gap: var(--spacing-gap);
+}
+
+/* ================================================
+   RESPONSIVE GRID LAYOUTS
+   ================================================ */
+.grid-responsive-2 {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: var(--spacing-gap);
+}
+@media (min-width: 640px) {
+  .grid-responsive-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.grid-responsive-3 {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: var(--spacing-gap);
+}
+@media (min-width: 640px) {
+  .grid-responsive-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .grid-responsive-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.grid-responsive-4 {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: var(--spacing-gap);
+}
+@media (min-width: 640px) {
+  .grid-responsive-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 768px) {
+  .grid-responsive-4 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .grid-responsive-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+

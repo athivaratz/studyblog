@@ -2,9 +2,27 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Folder, Calendar, BookOpen, Settings } from "lucide-react";
-import { LoginButton } from "@/components/auth";
+import { usePathname } from "next/navigation";
+import { CheckSquare, Brain, Calendar, User } from "lucide-react";
 import { useTheme } from "@/contexts";
+import { useAuth } from "@/contexts/AuthContext";
+
+/**
+ * ================================================
+ * RESPONSIVE NAVBAR COMPONENT
+ * ================================================
+ * 
+ * Menu Items:
+ * 1. To-Do - หน้าแรก + สิ่งที่ต้องทำ
+ * 2. ตารางเรียน - จัดการตารางเรียน
+ * 3. ทบทวน - ระบบทบทวนเนื้อหา + เกม
+ * 
+ * คลิกที่ Profile = ไปหน้า Settings
+ * ปุ่ม Logout อยู่ใน Settings เท่านั้น
+ * 
+ * Compact Mode: ย่อ navbar ในหน้าอื่นๆ ที่ไม่ใช่หน้าแรก
+ * ================================================
+ */
 
 interface NavItem {
   icon: React.ReactNode;
@@ -14,49 +32,189 @@ interface NavItem {
   darkColor: string;
 }
 
+const primaryColor = "#00568C";
+
 const navItems: NavItem[] = [
-  { icon: <Folder className="w-5 h-5" />, label: "วิชาเรียน", href: "/subjects", color: "#FFF3B0", darkColor: "#4D4A2A" },
-  { icon: <Calendar className="w-5 h-5" />, label: "ปฏิทิน", href: "/calendar", color: "#C5E8FF", darkColor: "#2A3A4D" },
-  { icon: <BookOpen className="w-5 h-5" />, label: "การบ้าน", href: "/homework", color: "#FFD6E0", darkColor: "#5C3A42" },
-  { icon: <Settings className="w-5 h-5" />, label: "ตั้งค่า", href: "/settings", color: "#D4F5D4", darkColor: "#2A4D2A" },
+  { icon: <CheckSquare className="w-5 h-5" />, label: "To-Do", href: "/", color: "#C5E8FF", darkColor: "#1A3A4D" },
+  { icon: <Calendar className="w-5 h-5" />, label: "ตารางเรียน", href: "/schedule", color: "#C5E8FF", darkColor: "#1A3A4D" },
+  { icon: <Brain className="w-5 h-5" />, label: "ทบทวน", href: "/review", color: "#C5E8FF", darkColor: "#1A3A4D" },
 ];
+
+// Profile Button (Click to go to Settings)
+function ProfileButton({ compact = false }: { compact?: boolean }) {
+  const { user, userProfile } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  
+  const borderColor = primaryColor;
+  const shadowColor = isDark ? "#404040" : primaryColor;
+  const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
+  const textMuted = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
+  const avatarBg = primaryColor;
+
+  if (!user) return null;
+
+  return (
+    <Link href="/settings">
+      <motion.div
+        className="flex items-center gap-2 cursor-pointer"
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        {user.photoURL ? (
+          <img
+            src={user.photoURL}
+            alt={user.displayName || "User"}
+            className={compact ? "w-8 h-8 rounded-full" : "w-10 h-10 rounded-full"}
+            style={{ border: `2px solid ${borderColor}`, boxShadow: `2px 2px 0px ${shadowColor}` }}
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div 
+            className={compact ? "w-8 h-8 rounded-full flex items-center justify-center" : "w-10 h-10 rounded-full flex items-center justify-center"}
+            style={{ 
+              border: `2px solid ${borderColor}`,
+              backgroundColor: avatarBg,
+              boxShadow: `2px 2px 0px ${shadowColor}`,
+            }}
+          >
+            <User className="w-4 h-4 text-white" />
+          </div>
+        )}
+        
+        {!compact && (
+          <div className="hidden md:block">
+            <p className="font-kanit text-sm font-medium leading-tight" style={{ color: textColor }}>
+              {userProfile?.displayName || user.displayName || "ผู้ใช้"}
+            </p>
+            <p className="font-kanit text-xs" style={{ color: textMuted }}>
+              คลิกเพื่อตั้งค่า
+            </p>
+          </div>
+        )}
+      </motion.div>
+    </Link>
+  );
+}
 
 export function Navbar() {
   const { theme } = useTheme();
+  const pathname = usePathname();
+  const isDark = theme === "dark";
+  
+  // Check if we're on the home page - if not, use compact mode
+  const isHomePage = pathname === "/";
+  const isCompact = !isHomePage;
+  
+  // Theme-aware colors
+  const navBg = isDark ? "#252525" : "#FFFFFF";
+  const borderColor = primaryColor;
+  const shadowColor = isDark ? "#404040" : primaryColor;
+  const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
+  const textMuted = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
+  const logoBgFrom = isDark ? "#1A3A4D" : "#C5E8FF";
+  const logoBgTo = isDark ? "#0D2830" : "#E8F4FF";
 
+  // Compact Navbar for non-home pages
+  if (isCompact) {
+    return (
+      <motion.nav
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        className="rounded-2xl sticky top-0 z-50 mx-0 mt-0 p-2 sm:mx-2 sm:mt-2 sm:p-3 xl:mx-4 xl:mt-4 xl:p-4"
+        style={{
+          backgroundColor: navBg,
+          border: `2px solid ${borderColor}`,
+          boxShadow: `4px 4px 0px ${shadowColor}`,
+        }}
+      >
+        <div className="flex items-center justify-between">
+          {/* Home button (red circle) */}
+          <Link href="/">
+            <motion.div
+              className="w-10 h-10 xl:w-12 xl:h-12 rounded-full flex items-center justify-center cursor-pointer"
+              style={{
+                backgroundColor: "#FF6B6B",
+                border: `2px solid ${borderColor}`,
+                boxShadow: `2px 2px 0px ${shadowColor}`,
+              }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span className="text-lg xl:text-xl">🏠</span>
+            </motion.div>
+          </Link>
+
+          {/* Page Title */}
+          <h1 
+            className="font-felipa text-lg xl:text-2xl"
+            style={{ color: textColor }}
+          >
+            {pathname === "/schedule" && "ตารางเรียน"}
+            {pathname === "/review" && "ทบทวน"}
+            {pathname === "/settings" && "ตั้งค่า"}
+            {pathname === "/todo" && "To-Do"}
+          </h1>
+
+          {/* Profile (click to Settings) */}
+          <ProfileButton compact />
+        </div>
+      </motion.nav>
+    );
+  }
+
+  // Full Navbar for home page
   return (
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className="
-        bg-[#FFFEF9] dark:bg-[#2D2D2D] border-2 border-black dark:border-white/20 rounded-2xl
-        shadow-hard dark:shadow-none mx-0 lg:mx-4 mt-0 lg:mt-4 p-2 lg:p-4
-        sticky top-0 lg:top-4 z-50
-      "
+      className="rounded-2xl sticky top-0 z-50 mx-0 mt-0 p-2 sm:mx-2 sm:mt-2 sm:p-3 xl:mx-4 xl:mt-4 xl:p-4"
+      style={{
+        backgroundColor: navBg,
+        border: `2px solid ${borderColor}`,
+        boxShadow: `4px 4px 0px ${shadowColor}`,
+      }}
     >
       <div className="flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 lg:gap-3 group">
+        {/* 
+          ================================================
+          LOGO - RESPONSIVE SIZE
+          ================================================
+        */}
+        <Link href="/" className="flex items-center gap-2 xl:gap-3 group">
           <motion.div
-            className="
-              w-9 h-9 lg:w-12 lg:h-12 bg-gradient-to-br from-[#FFD6E0] to-[#E8D5F2] 
-              dark:from-[#5C3A42] dark:to-[#3D2A4D]
-              border-2 border-black dark:border-white/20 rounded-xl
-              flex items-center justify-center
-              shadow-hard-sm dark:shadow-none
-            "
+            className="rounded-xl flex items-center justify-center w-9 h-9 xl:w-12 xl:h-12"
+            style={{
+              background: `linear-gradient(to bottom right, ${logoBgFrom}, ${logoBgTo})`,
+              border: `2px solid ${borderColor}`,
+              boxShadow: `2px 2px 0px ${shadowColor}`,
+            }}
             whileHover={{ rotate: 5, scale: 1.05 }}
           >
-            <span className="text-lg lg:text-2xl">📂</span>
+            <span className="text-lg xl:text-2xl">📂</span>
           </motion.div>
           <div>
-            <h1 className="font-felipa text-lg lg:text-2xl leading-tight dark:text-white">Studygram</h1>
-            <p className="font-kanit text-[10px] lg:text-xs text-black/50 dark:text-white/50 hidden sm:block">Academic Organizer</p>
+            <h1 
+              className="font-felipa text-lg xl:text-2xl leading-tight"
+              style={{ color: textColor }}
+            >
+              studyblog
+            </h1>
+            <p 
+              className="font-kanit hidden sm:block text-[10px] xl:text-xs"
+              style={{ color: textMuted }}
+            >
+              Academic Organizer
+            </p>
           </div>
         </Link>
 
-        {/* Navigation items - Desktop only */}
-        <div className="hidden lg:flex items-center gap-2">
+        {/* 
+          ================================================
+          NAVIGATION ITEMS - DESKTOP ONLY (>= 1280px / xl:)
+          ================================================
+        */}
+        <div className="hidden xl:flex items-center gap-2">
           {navItems.map((item, index) => (
             <motion.div
               key={item.href}
@@ -66,18 +224,16 @@ export function Navbar() {
             >
               <Link href={item.href}>
                 <motion.div
-                  className="
-                    flex items-center gap-2 px-4 py-2
-                    border-2 border-black dark:border-white/20 rounded-xl
-                    font-kanit text-sm font-medium dark:text-white
-                    transition-colors
-                  "
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl font-kanit text-sm font-medium transition-colors cursor-pointer"
                   style={{ 
-                    backgroundColor: `var(--nav-bg-${item.href.slice(1)}, ${item.color})` 
+                    backgroundColor: isDark ? item.darkColor : item.color,
+                    border: `2px solid ${borderColor}`,
+                    boxShadow: `2px 2px 0px ${shadowColor}`,
+                    color: textColor,
                   }}
                   whileHover={{ 
                     scale: 1.05, 
-                    boxShadow: "3px 3px 0px #1A1A1A" 
+                    boxShadow: `4px 4px 0px ${shadowColor}`
                   }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -89,34 +245,47 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* Login/Profile Button */}
-        <div className="hidden lg:block">
-          <LoginButton variant="full" />
-        </div>
-        <div className="lg:hidden">
-          <LoginButton variant="compact" />
-        </div>
+        {/* 
+          ================================================
+          PROFILE BUTTON - Click to go to Settings
+          ================================================
+        */}
+        <ProfileButton />
       </div>
 
-      {/* Mobile Navigation - Bottom style */}
-      <div className="lg:hidden flex items-center justify-around mt-2 pt-2 border-t-2 border-dashed border-black/20 dark:border-white/10">
+      {/* 
+        ================================================
+        BOTTOM NAVIGATION - MOBILE + TABLET ONLY (< 1280px)
+        ================================================
+      */}
+      <div 
+        className="xl:hidden flex items-center justify-around mt-2 pt-2"
+        style={{ borderTop: `2px dashed ${isDark ? '#505050' : 'rgba(0,0,0,0.2)'}` }}
+      >
         {navItems.map((item) => (
           <Link key={item.href} href={item.href}>
             <motion.div
-              className="
-                flex flex-col items-center gap-0.5 p-1
-                rounded-xl cursor-pointer
-              "
+              className="flex flex-col items-center gap-0.5 p-1 rounded-xl cursor-pointer"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
               <div
-                className="w-8 h-8 border-2 border-black dark:border-white/20 rounded-lg flex items-center justify-center dark:text-white"
-                style={{ backgroundColor: theme === 'dark' ? item.darkColor : item.color }}
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center"
+                style={{ 
+                  backgroundColor: isDark ? item.darkColor : item.color,
+                  border: `2px solid ${borderColor}`,
+                  boxShadow: `2px 2px 0px ${shadowColor}`,
+                  color: textColor,
+                }}
               >
                 {item.icon}
               </div>
-              <span className="font-kanit text-[10px] dark:text-white/70">{item.label}</span>
+              <span 
+                className="font-kanit text-[10px] sm:text-[11px]"
+                style={{ color: isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)' }}
+              >
+                {item.label}
+              </span>
             </motion.div>
           </Link>
         ))}

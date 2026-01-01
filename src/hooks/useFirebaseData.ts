@@ -9,6 +9,8 @@ import {
   Schedule,
   UserStats,
   UserSettings,
+  Flashcard,
+  ReviewSession,
   getSubjects,
   getHomework,
   getTodos,
@@ -16,18 +18,25 @@ import {
   getScheduleByDay,
   getUserStats,
   getUserSettings,
+  getFlashcards,
+  getFlashcardsDueForReview,
+  getReviewSessions,
   createSubject,
   createHomework,
   createTodo,
   createScheduleItem,
+  createFlashcard,
+  saveReviewSession,
   updateSubject,
   updateHomework,
   updateTodo,
   updateScheduleItem,
+  updateFlashcardAfterReview,
   deleteSubject,
   deleteHomework,
   deleteTodo,
   deleteScheduleItem,
+  deleteFlashcard,
   completeHomework,
   updateUserStats,
   updateUserSettings,
@@ -63,10 +72,11 @@ export function useSubjects() {
     fetchSubjects();
   }, [fetchSubjects]);
 
-  const addSubject = async (data: Omit<Subject, "id" | "userId" | "createdAt">) => {
-    if (!user) return;
-    await createSubject(user.uid, data);
+  const addSubject = async (data: Omit<Subject, "id" | "userId" | "createdAt">): Promise<string> => {
+    if (!user) return "";
+    const newId = await createSubject(user.uid, data);
     await fetchSubjects();
+    return newId;
   };
 
   const editSubject = async (id: string, data: Partial<Subject>) => {
@@ -183,10 +193,10 @@ export function useHomework(subjectId?: string) {
 }
 
 // =====================
-// useTodos Hook
+// useTodos Hook (Updated for new system)
 // =====================
 
-export function useTodos() {
+export function useTodos(categoryFilter?: "all" | "homework" | "personal" | "other") {
   const { user } = useAuth();
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -211,10 +221,16 @@ export function useTodos() {
     fetchTodos();
   }, [fetchTodos]);
 
-  const addTodo = async (text: string) => {
+  const addTodo = async (data: {
+    text: string;
+    category: "homework" | "personal" | "other";
+    subjectId?: string;
+    subjectName?: string;
+    dueDate?: Date;
+  }) => {
     if (!user) return;
     const order = todos.length;
-    await createTodo(user.uid, text, order);
+    await createTodo(user.uid, { ...data, order });
     await fetchTodos();
   };
 
@@ -223,8 +239,8 @@ export function useTodos() {
     await fetchTodos();
   };
 
-  const editTodo = async (id: string, text: string) => {
-    await updateTodo(id, { text });
+  const editTodo = async (id: string, data: Partial<Todo>) => {
+    await updateTodo(id, data);
     await fetchTodos();
   };
 
@@ -233,8 +249,26 @@ export function useTodos() {
     await fetchTodos();
   };
 
+  // Filter todos
+  const filteredTodos = categoryFilter && categoryFilter !== "all"
+    ? todos.filter(t => t.category === categoryFilter)
+    : todos;
+  
+  const pendingTodos = filteredTodos.filter(t => !t.completed);
+  const completedTodos = filteredTodos.filter(t => t.completed);
+  
+  // Overdue todos
+  const overdueTodos = pendingTodos.filter(t => {
+    if (!t.dueDate) return false;
+    return t.dueDate < new Date();
+  });
+
   return {
-    todos,
+    todos: filteredTodos,
+    allTodos: todos,
+    pendingTodos,
+    completedTodos,
+    overdueTodos,
     loading,
     error,
     addTodo,
@@ -384,6 +418,119 @@ export function useUserSettings() {
     loading,
     updateSettings,
     refetch: fetchSettings,
+  };
+}
+
+// =====================
+// useFlashcards Hook
+// =====================
+
+export function useFlashcards(subjectId?: string) {
+  const { user } = useAuth();
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchFlashcards = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const data = await getFlashcards(user.uid, subjectId);
+      setFlashcards(data);
+      setError(null);
+    } catch (err) {
+      setError("ไม่สามารถโหลด Flashcard ได้");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, subjectId]);
+
+  useEffect(() => {
+    fetchFlashcards();
+  }, [fetchFlashcards]);
+
+  const addFlashcard = async (data: { question: string; answer: string; subjectId: string }) => {
+    if (!user) return;
+    await createFlashcard(user.uid, data);
+    await fetchFlashcards();
+  };
+
+  const reviewFlashcard = async (flashcardId: string, quality: number) => {
+    await updateFlashcardAfterReview(flashcardId, quality);
+    await fetchFlashcards();
+  };
+
+  const removeFlashcard = async (id: string) => {
+    await deleteFlashcard(id);
+    await fetchFlashcards();
+  };
+
+  // Cards due for review
+  const dueForReview = flashcards.filter(f => f.nextReviewDate <= new Date());
+
+  return {
+    flashcards,
+    dueForReview,
+    loading,
+    error,
+    addFlashcard,
+    reviewFlashcard,
+    removeFlashcard,
+    refetch: fetchFlashcards,
+  };
+}
+
+// =====================
+// useReviewSessions Hook
+// =====================
+
+export function useReviewSessions() {
+  const { user } = useAuth();
+  const [sessions, setSessions] = useState<ReviewSession[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchSessions = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const data = await getReviewSessions(user.uid);
+      setSessions(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
+
+  const addSession = async (data: Omit<ReviewSession, "id" | "userId" | "completedAt">) => {
+    if (!user) return;
+    await saveReviewSession(user.uid, data);
+    await fetchSessions();
+  };
+
+  // Calculate stats
+  const totalScore = sessions.reduce((sum, s) => sum + s.score, 0);
+  const averageScore = sessions.length > 0 ? Math.round(totalScore / sessions.length) : 0;
+  const totalQuestions = sessions.reduce((sum, s) => sum + s.totalQuestions, 0);
+  const totalCorrect = sessions.reduce((sum, s) => sum + s.correctAnswers, 0);
+
+  return {
+    sessions,
+    loading,
+    addSession,
+    stats: {
+      totalSessions: sessions.length,
+      averageScore,
+      totalQuestions,
+      totalCorrect,
+      accuracy: totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0,
+    },
+    refetch: fetchSessions,
   };
 }
 

@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.studygram.app',
-  appName: 'Studygram',
+  appId: 'com.studyblog.app',
+  appName: 'studyblog',
   webDir: 'out'
 };
 

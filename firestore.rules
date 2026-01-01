@@ -29,8 +29,7 @@ service cloud.firestore {
     
     // Subjects - user can only access their own subjects
     match /subjects/{subjectId} {
-      // Allow list queries when userId in query matches auth.uid
-      allow list: if isAuthenticated() && request.auth.uid == request.query.filters.userId;
+      allow list: if isAuthenticated();
       allow get: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
@@ -54,6 +53,22 @@ service cloud.firestore {
     
     // Schedule - user can only access their own schedule
     match /schedules/{scheduleId} {
+      allow list: if isAuthenticated();
+      allow get: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Flashcards - user can only access their own flashcards
+    match /flashcards/{flashcardId} {
+      allow list: if isAuthenticated();
+      allow get: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Review Sessions - user can only access their own sessions
+    match /reviewSessions/{sessionId} {
       allow list: if isAuthenticated();
       allow get: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;

@@ -2,39 +2,58 @@
 
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { PaperCard } from "@/components/ui";
 import { Sparkles, BookOpen, Calendar, Brain } from "lucide-react";
 
 export function LoginCard() {
   const { signInWithGoogle, loading } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  // Theme colors
+  const pageBg = isDark ? "#1A1A1A" : "#FFF8E7";
+  const decorOpacity = isDark ? 0.6 : 1;
+  const badgeBg = isDark ? "#4D4A2A" : "#FFE066";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#000000";
+  const textColor = isDark ? "#FFFFFF" : "#000000";
+  const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
+  const btnBg = isDark ? "#3D3D3D" : "#FFFFFF";
+  const btnHoverBg = isDark ? "#4D4D4D" : "#F9FAFB";
+  const boxShadow = isDark ? "none" : "4px 4px 0 #000";
+  const spinnerBorder = isDark ? "#FFFFFF" : "#000000";
 
   return (
-    <div className="min-h-screen bg-[#FFF8E7] dark:bg-[#1A1A1A] flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: pageBg }}>
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute top-10 left-10 text-6xl dark:opacity-60"
+          className="absolute top-10 left-10 text-6xl"
+          style={{ opacity: decorOpacity }}
           animate={{ rotate: [0, 10, -10, 0], y: [0, -10, 0] }}
           transition={{ duration: 4, repeat: Infinity }}
         >
           📚
         </motion.div>
         <motion.div
-          className="absolute top-20 right-20 text-5xl dark:opacity-60"
+          className="absolute top-20 right-20 text-5xl"
+          style={{ opacity: decorOpacity }}
           animate={{ rotate: [0, -15, 15, 0], y: [0, -15, 0] }}
           transition={{ duration: 3.5, repeat: Infinity, delay: 0.5 }}
         >
           ✏️
         </motion.div>
         <motion.div
-          className="absolute bottom-20 left-20 text-5xl dark:opacity-60"
+          className="absolute bottom-20 left-20 text-5xl"
+          style={{ opacity: decorOpacity }}
           animate={{ rotate: [0, 15, -15, 0], y: [0, -10, 0] }}
           transition={{ duration: 5, repeat: Infinity, delay: 1 }}
         >
           🎒
         </motion.div>
         <motion.div
-          className="absolute bottom-10 right-10 text-6xl dark:opacity-60"
+          className="absolute bottom-10 right-10 text-6xl"
+          style={{ opacity: decorOpacity }}
           animate={{ rotate: [0, -10, 10, 0], y: [0, -12, 0] }}
           transition={{ duration: 4.5, repeat: Infinity, delay: 0.3 }}
         >
@@ -56,60 +75,45 @@ export function LoginCard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <div className="inline-flex items-center gap-2 bg-[#FFE066] dark:bg-[#4D4A2A] px-4 py-2 rounded-full border-2 border-black dark:border-white/20 mb-4">
-              <Sparkles className="w-5 h-5 text-black dark:text-white" />
-              <span className="font-kanit text-sm font-medium text-black dark:text-white">Y2K Academic</span>
+            <div 
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 mb-4"
+              style={{ backgroundColor: badgeBg, borderColor }}
+            >
+              <Sparkles className="w-5 h-5" style={{ color: textColor }} />
+              <span className="font-kanit text-sm font-medium" style={{ color: textColor }}>Y2K Academic</span>
             </div>
-            <h1 className="font-felipa text-5xl mb-2 text-black dark:text-white">Studygram</h1>
-            <p className="font-kanit text-black/60 dark:text-white/60">
+            <h1 className="font-felipa text-5xl mb-2" style={{ color: textColor }}>studyblog</h1>
+            <p className="font-kanit" style={{ color: textMuted }}>
               จัดการการเรียนอย่างสนุกสนาน
             </p>
           </motion.div>
 
-          {/* Features */}
-          <motion.div 
-            className="space-y-3 mb-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            <FeatureItem 
-              icon={<BookOpen className="w-4 h-4" />}
-              text="เชื่อมต่อ Google Classroom"
-              color="pink"
-            />
-            <FeatureItem 
-              icon={<Calendar className="w-4 h-4" />}
-              text="ซิงค์กับ Google Calendar"
-              color="blue"
-            />
-            <FeatureItem 
-              icon={<Brain className="w-4 h-4" />}
-              text="สร้าง Quiz ด้วย AI"
-              color="green"
-            />
-          </motion.div>
+
 
           {/* Login Button */}
           <motion.button
             onClick={signInWithGoogle}
             disabled={loading}
-            className={`
-              w-full flex items-center justify-center gap-3 px-6 py-4
-              bg-white dark:bg-[#3D3D3D] border-3 border-black dark:border-white/20 rounded-xl
-              font-kanit text-lg font-medium text-black dark:text-white
-              shadow-hard dark:shadow-none
-              transition-all cursor-pointer
-              ${loading ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50 dark:hover:bg-[#4D4D4D]"}
-            `}
-            whileHover={!loading ? { scale: 1.02, y: -2 } : undefined}
+            className="w-full flex items-center justify-center gap-3 px-6 py-4 border-3 rounded-xl font-kanit text-lg font-medium transition-all cursor-pointer"
+            style={{
+              backgroundColor: btnBg,
+              borderColor,
+              color: textColor,
+              boxShadow,
+              opacity: loading ? 0.5 : 1,
+              cursor: loading ? "not-allowed" : "pointer"
+            }}
+            whileHover={!loading ? { scale: 1.02, y: -2, backgroundColor: btnHoverBg } : undefined}
             whileTap={!loading ? { scale: 0.98 } : undefined}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
             {loading ? (
-              <div className="w-6 h-6 border-2 border-black dark:border-white border-t-transparent rounded-full animate-spin" />
+              <div 
+                className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin"
+                style={{ borderColor: spinnerBorder, borderTopColor: "transparent" }}
+              />
             ) : (
               <>
                 <svg className="w-6 h-6" viewBox="0 0 24 24">
@@ -137,7 +141,8 @@ export function LoginCard() {
 
           {/* Footer */}
           <motion.p 
-            className="text-center font-kanit text-xs text-black/40 mt-6"
+            className="text-center font-kanit text-xs mt-6"
+            style={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
@@ -150,32 +155,41 @@ export function LoginCard() {
   );
 }
 
-function FeatureItem({ 
-  icon, 
-  text, 
-  color 
-}: { 
-  icon: React.ReactNode; 
-  text: string; 
+interface FeatureItemProps {
+  icon: React.ReactNode;
+  text: string;
   color: "pink" | "blue" | "green" | "yellow";
-}) {
-  const bgColors = {
-    pink: "bg-[#FFD6E0] dark:bg-[#5C3A42]",
-    blue: "bg-[#C5E8FF] dark:bg-[#2A3A4D]",
-    green: "bg-[#D4F5D4] dark:bg-[#2A4D2A]",
-    yellow: "bg-[#FFF3B0] dark:bg-[#4D4A2A]",
+  isDark: boolean;
+}
+
+function FeatureItem({ icon, text, color, isDark }: FeatureItemProps) {
+  const lightBgColors = {
+    pink: "#FFD6E0",
+    blue: "#C5E8FF",
+    green: "#D4F5D4",
+    yellow: "#FFF3B0",
   };
+  
+  const darkBgColors = {
+    pink: "#5C3A42",
+    blue: "#2A3A4D",
+    green: "#2A4D2A",
+    yellow: "#4D4A2A",
+  };
+
+  const bgColor = isDark ? darkBgColors[color] : lightBgColors[color];
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#000000";
+  const textColor = isDark ? "#FFFFFF" : "#000000";
 
   return (
     <div className="flex items-center gap-3">
-      <div className={`
-        w-8 h-8 rounded-lg border-2 border-black dark:border-white/20
-        flex items-center justify-center dark:text-white
-        ${bgColors[color]}
-      `}>
+      <div 
+        className="w-8 h-8 rounded-lg border-2 flex items-center justify-center"
+        style={{ backgroundColor: bgColor, borderColor, color: textColor }}
+      >
         {icon}
       </div>
-      <span className="font-kanit text-sm dark:text-white">{text}</span>
+      <span className="font-kanit text-sm" style={{ color: textColor }}>{text}</span>
     </div>
   );
 }

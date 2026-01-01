@@ -3,17 +3,37 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Play, Pause, SkipForward, SkipBack, Clock, X, Music } from "lucide-react";
-import { ClockTimerSwap } from "./ClockTimerSwap";
+import { ClockTimerWidget } from "./ClockTimerWidget";
 import { useMusic } from "@/contexts/MusicContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface MobileUtilitiesProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const primaryColor = "#00568C";
+
 export function MobileUtilities({ isOpen, onClose }: MobileUtilitiesProps) {
   const [activeTab, setActiveTab] = useState<"clock" | "music">("clock");
   const { isPlaying, currentTrack, tracks, togglePlay, changeTrack } = useMusic();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  // Theme colors
+  const sheetBg = isDark ? "#2D2D2D" : "#FFFFFF";
+  const borderColor = primaryColor;
+  const handleBg = isDark ? "rgba(255,255,255,0.2)" : "rgba(0,86,140,0.3)";
+  const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
+  const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
+  
+  // Tab colors
+  const clockActiveBg = isDark ? "#1A3A4D" : "#C5E8FF";
+  const musicActiveBg = isDark ? "#1A3A4D" : "#C5E8FF";
+  
+  // Music player colors
+  const musicCardBg = isDark ? "#1A3A4D" : "#E8F4FF";
+  const controlBtnBg = isDark ? "#2D4D5D" : "#C5E8FF";
 
   return (
     <AnimatePresence>
@@ -34,41 +54,45 @@ export function MobileUtilities({ isOpen, onClose }: MobileUtilitiesProps) {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-[#FFFEF9] dark:bg-[#2D2D2D] rounded-t-3xl border-t-3 border-x-3 border-black dark:border-white/20 shadow-2xl max-h-[70vh] overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl border-t-2 border-x-2 shadow-2xl max-h-[80vh] overflow-hidden"
+            style={{ backgroundColor: sheetBg, borderColor }}
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-2">
-              <div className="w-12 h-1.5 bg-black/20 dark:bg-white/20 rounded-full" />
+              <div className="w-12 h-1.5 rounded-full" style={{ backgroundColor: handleBg }} />
             </div>
 
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-3 right-4 p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full"
+              className="absolute top-3 right-4 p-2 rounded-full transition-colors hover:bg-black/10"
+              style={{ color: textColor }}
             >
-              <X className="w-5 h-5 dark:text-white" />
+              <X className="w-5 h-5" />
             </button>
 
             {/* Tab switcher */}
             <div className="flex gap-2 px-4 mb-4">
               <button
                 onClick={() => setActiveTab("clock")}
-                className={`flex-1 py-2 px-4 rounded-xl font-kanit text-sm border-2 transition-all dark:text-white ${
-                  activeTab === "clock"
-                    ? "bg-[#FFF3B0] dark:bg-[#3D3A2A] border-black dark:border-white/30"
-                    : "border-transparent hover:bg-black/5 dark:hover:bg-white/10"
-                }`}
+                className="flex-1 py-2 px-4 rounded-xl font-kanit text-sm border-2 transition-all"
+                style={{ 
+                  color: activeTab === "clock" ? "#FFFFFF" : textColor,
+                  backgroundColor: activeTab === "clock" ? primaryColor : "transparent",
+                  borderColor: primaryColor
+                }}
               >
                 <Clock className="w-4 h-4 inline mr-2" />
                 นาฬิกา/จับเวลา
               </button>
               <button
                 onClick={() => setActiveTab("music")}
-                className={`flex-1 py-2 px-4 rounded-xl font-kanit text-sm border-2 transition-all dark:text-white ${
-                  activeTab === "music"
-                    ? "bg-[#FFD6E0] dark:bg-[#3D2A30] border-black dark:border-white/30"
-                    : "border-transparent hover:bg-black/5 dark:hover:bg-white/10"
-                }`}
+                className="flex-1 py-2 px-4 rounded-xl font-kanit text-sm border-2 transition-all"
+                style={{ 
+                  color: activeTab === "music" ? "#FFFFFF" : textColor,
+                  backgroundColor: activeTab === "music" ? primaryColor : "transparent",
+                  borderColor: primaryColor
+                }}
               >
                 <Music className="w-4 h-4 inline mr-2" />
                 เพลง
@@ -79,23 +103,29 @@ export function MobileUtilities({ isOpen, onClose }: MobileUtilitiesProps) {
             <div className="px-4 pb-8">
               {activeTab === "clock" ? (
                 <div className="flex justify-center">
-                  <ClockTimerSwap />
+                  <ClockTimerWidget size={180} />
                 </div>
               ) : (
                 <div className="space-y-4">
                   {/* Now playing */}
-                  <div className="bg-[#C5E8FF] dark:bg-[#2A3540] border-2 border-black dark:border-white/20 rounded-xl p-4">
+                  <div 
+                    className="border-2 rounded-xl p-4"
+                    style={{ backgroundColor: musicCardBg, borderColor }}
+                  >
                     <div className="flex items-center gap-3">
                       <motion.div
-                        className="w-14 h-14 bg-gradient-to-br from-[#FFD6E0] to-[#E8D5F2] border-2 border-black rounded-lg flex items-center justify-center"
+                        className="w-14 h-14 rounded-xl flex items-center justify-center"
+                        style={{ backgroundColor: primaryColor }}
                         animate={isPlaying ? { rotate: 360 } : { rotate: 0 }}
                         transition={isPlaying ? { duration: 3, repeat: Infinity, ease: "linear" } : {}}
                       >
                         <span className="text-2xl">🎵</span>
                       </motion.div>
                       <div className="flex-1">
-                        <p className="font-kanit font-medium dark:text-white">{tracks[currentTrack].title}</p>
-                        <p className="font-kanit text-sm text-black/60 dark:text-white/60">
+                        <p className="font-kanit font-medium" style={{ color: textColor }}>
+                          {tracks[currentTrack].title}
+                        </p>
+                        <p className="font-kanit text-sm" style={{ color: textMuted }}>
                           {tracks[currentTrack].artist}
                         </p>
                       </div>
@@ -107,13 +137,14 @@ export function MobileUtilities({ isOpen, onClose }: MobileUtilitiesProps) {
                         [...Array(12)].map((_, i) => (
                           <motion.div
                             key={i}
-                            className="w-2 bg-[#FF6B6B] rounded-full"
+                            className="w-2 rounded-full"
+                            style={{ backgroundColor: primaryColor }}
                             animate={{ height: [4, Math.random() * 24 + 4, 4] }}
                             transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.08 }}
                           />
                         ))
                       ) : (
-                        <p className="text-sm font-kanit text-black/40 dark:text-white/40">
+                        <p className="text-sm font-kanit" style={{ color: textMuted }}>
                           กดเล่นเพื่อเริ่มฟังเพลง
                         </p>
                       )}
@@ -124,33 +155,39 @@ export function MobileUtilities({ isOpen, onClose }: MobileUtilitiesProps) {
                   <div className="flex items-center justify-center gap-4">
                     <motion.button
                       onClick={() => changeTrack("prev")}
-                      className="w-12 h-12 bg-[#FFF3B0] dark:bg-[#3D3A2A] border-2 border-black dark:border-white/30 rounded-full flex items-center justify-center"
+                      className="w-12 h-12 border-2 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: controlBtnBg, borderColor, color: textColor }}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
-                      <SkipBack className="w-5 h-5 dark:text-white" />
+                      <SkipBack className="w-5 h-5" />
                     </motion.button>
 
                     <motion.button
                       onClick={togglePlay}
-                      className="w-16 h-16 bg-[#FFD6E0] dark:bg-[#3D2A30] border-2 border-black dark:border-white/30 rounded-full flex items-center justify-center shadow-hard dark:shadow-none"
+                      className="w-16 h-16 rounded-full flex items-center justify-center"
+                      style={{ 
+                        backgroundColor: primaryColor, 
+                        color: "#FFFFFF",
+                      }}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
                       {isPlaying ? (
-                        <Pause className="w-7 h-7 dark:text-white" />
+                        <Pause className="w-7 h-7" />
                       ) : (
-                        <Play className="w-7 h-7 ml-1 dark:text-white" />
+                        <Play className="w-7 h-7 ml-1" />
                       )}
                     </motion.button>
 
                     <motion.button
                       onClick={() => changeTrack("next")}
-                      className="w-12 h-12 bg-[#FFF3B0] dark:bg-[#3D3A2A] border-2 border-black dark:border-white/30 rounded-full flex items-center justify-center"
+                      className="w-12 h-12 border-2 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: controlBtnBg, borderColor, color: textColor }}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                     >
-                      <SkipForward className="w-5 h-5 dark:text-white" />
+                      <SkipForward className="w-5 h-5" />
                     </motion.button>
                   </div>
                 </div>

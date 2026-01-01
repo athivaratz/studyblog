@@ -1,6 +1,6 @@
 {
-  "name": "Studygram",
-  "short_name": "Studygram",
+  "name": "studyblog",
+  "short_name": "studyblog",
   "description": "ผู้ช่วยจัดการการเรียนสไตล์ Y2K - Academic Organizer",
   "start_url": "/",
   "display": "standalone",

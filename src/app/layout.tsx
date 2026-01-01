@@ -18,13 +18,13 @@ const kanit = Kanit({
 });
 
 export const metadata: Metadata = {
-  title: "Studygram | Academic Organizer",
-  description: "Y2K Academic Aesthetic - จัดการการเรียนของคุณอย่างมีสไตล์",
+  title: "studyblog",
+  description: "จัดการการเรียนของคุณอย่างมีสไตล์",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Studygram",
+    title: "studyblog",
   },
   formatDetection: {
     telephone: false,
@@ -42,7 +42,7 @@ export default function RootLayout({
         {/* PWA Meta Tags for iOS */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Studygram" />
+        <meta name="apple-mobile-web-app-title" content="studyblog" />
         <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
         
         {/* PWA Splash Screens for iOS */}

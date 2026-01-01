@@ -44,3 +44,6 @@ next-env.d.ts
 keystore/
 prompt.txt
 docs/
+
+firestore.rules
+firestore.indexes.json

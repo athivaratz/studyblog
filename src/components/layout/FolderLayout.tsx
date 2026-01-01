@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, ReactNode } from "react";
 import { FolderTab } from "../ui/FolderTab";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface Tab {
   id: string;
@@ -19,8 +20,19 @@ interface FolderLayoutProps {
 
 export function FolderLayout({ tabs, defaultTab }: FolderLayoutProps) {
   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id);
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
 
   const activeContent = tabs.find((tab) => tab.id === activeTab)?.content;
+
+  // Theme colors
+  const containerBg = isDark ? "#2D2D2D" : "#FFFEF9";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#000000";
+  const boxShadow = isDark ? "none" : "6px 6px 0 #1A1A1A";
+  const textureOpacity = isDark ? 0.2 : 1;
+  const redLineColor = isDark ? "rgba(239, 68, 68, 0.2)" : "rgba(252, 165, 165, 0.4)";
+  const holeBg = isDark ? "#1A1A1A" : "#F5E6D3";
+  const holeBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.2)";
 
   return (
     <div className="w-full">
@@ -46,16 +58,19 @@ export function FolderLayout({ tabs, defaultTab }: FolderLayoutProps) {
 
       {/* Folder Content */}
       <motion.div
-        className="
-          bg-[#FFFEF9] dark:bg-[#2D2D2D] border-2 border-black dark:border-white/20 rounded-b-2xl rounded-tr-2xl
-          min-h-[350px] lg:min-h-[500px] p-3 lg:p-6
-          shadow-hard-lg dark:shadow-none
-          relative
-        "
+        className="min-h-[350px] lg:min-h-[500px] p-3 lg:p-6 border-2 rounded-b-2xl rounded-tr-2xl relative"
+        style={{ 
+          backgroundColor: containerBg, 
+          borderColor, 
+          boxShadow 
+        }}
         layout
       >
         {/* Paper texture lines */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-b-2xl rounded-tr-2xl dark:opacity-20">
+        <div 
+          className="absolute inset-0 pointer-events-none overflow-hidden rounded-b-2xl rounded-tr-2xl"
+          style={{ opacity: textureOpacity }}
+        >
           {Array.from({ length: 15 }).map((_, i) => (
             <div
               key={i}
@@ -66,7 +81,10 @@ export function FolderLayout({ tabs, defaultTab }: FolderLayoutProps) {
         </div>
 
         {/* Red margin line */}
-        <div className="absolute left-8 lg:left-12 top-0 bottom-0 w-[1px] bg-red-300/40 dark:bg-red-500/20" />
+        <div 
+          className="absolute left-8 lg:left-12 top-0 bottom-0 w-[1px]"
+          style={{ backgroundColor: redLineColor }}
+        />
 
         {/* Content */}
         <AnimatePresence mode="wait">
@@ -87,7 +105,8 @@ export function FolderLayout({ tabs, defaultTab }: FolderLayoutProps) {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="w-3 h-3 lg:w-4 lg:h-4 bg-[#F5E6D3] dark:bg-[#1A1A1A] border-2 border-black/20 dark:border-white/10 rounded-full"
+              className="w-3 h-3 lg:w-4 lg:h-4 border-2 rounded-full"
+              style={{ backgroundColor: holeBg, borderColor: holeBorder }}
             />
           ))}
         </div>

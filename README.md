@@ -1,4 +1,4 @@
-# 📚 Studygram
+# 📚 studyblog
 
 > ผู้ช่วยจัดการการเรียนสไตล์ Y2K - Academic Organizer for Thai Students
 
@@ -8,7 +8,7 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?style=flat-square&logo=tailwindcss)
 
 <p align="center">
-  <img src="public/icons/icon-192x192.png" alt="Studygram Logo" width="120" />
+  <img src="public/icons/icon-192x192.png" alt="studyblog Logo" width="120" />
 </p>
 
 ## ✨ Features
@@ -34,8 +34,8 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/studygram.git
-   cd studygram
+   git clone https://github.com/your-username/studyblog.git
+   cd studyblog
    ```
 
 2. **Install dependencies**
@@ -134,12 +134,12 @@ src/
 ## 📱 PWA Installation
 
 ### iOS (Safari)
-1. เปิด Studygram บน Safari
+1. เปิด studyblog บน Safari
 2. กดปุ่ม Share
 3. เลือก "Add to Home Screen"
 
 ### Android (Chrome)
-1. เปิด Studygram บน Chrome
+1. เปิด studyblog บน Chrome
 2. กดเมนู 3 จุด
 3. เลือก "Install app" หรือ "Add to Home screen"
 

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
 import { Play, Pause, RotateCcw, Flag } from "lucide-react";
+import { useTheme } from "@/contexts";
 
 interface TimerWidgetProps {
   className?: string;
@@ -12,6 +13,8 @@ interface TimerWidgetProps {
 type TimerMode = "pomodoro" | "stopwatch";
 
 export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [mode, setMode] = useState<TimerMode>("pomodoro");
   const [isRunning, setIsRunning] = useState(false);
   const [time, setTime] = useState(25 * 60); // 25 minutes default for pomodoro
@@ -24,6 +27,11 @@ export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
     { label: "60 นาที", time: 60 * 60 },
   ];
   const [selectedPreset, setSelectedPreset] = useState(0);
+
+  // Theme-aware colors
+  const bgColor = isDark ? "#1A1A1A" : "#2D2D2D";
+  const borderColor = isDark ? "#606060" : "#1A1A1A";
+  const shadowColor = isDark ? "#404040" : "#1A1A1A";
 
   // Timer logic
   useEffect(() => {
@@ -103,12 +111,12 @@ export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
 
   return (
     <motion.div
-      className={`
-        bg-[#1A1A1A] border-3 border-black rounded-2xl
-        p-4 w-[200px]
-        shadow-hard
-        ${className}
-      `}
+      className={`rounded-2xl p-4 w-[200px] ${className}`}
+      style={{
+        backgroundColor: bgColor,
+        border: `3px solid ${borderColor}`,
+        boxShadow: `4px 4px 0px ${shadowColor}`,
+      }}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -187,10 +195,13 @@ export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
           </svg>
         )}
         
-        <div className={`
-          ${mode === "pomodoro" ? "bg-[#2A1515]" : "bg-[#152A28]"}
-          border-2 border-black rounded-lg p-3
-        `}>
+        <div 
+          className="rounded-lg p-3"
+          style={{
+            backgroundColor: mode === "pomodoro" ? "#2A1515" : "#152A28",
+            border: `2px solid ${borderColor}`,
+          }}
+        >
           <div className="flex items-center justify-center">
             <motion.span 
               className={`
