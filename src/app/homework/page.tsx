@@ -19,6 +19,9 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+// Helper to get urgent threshold (2 days from now)
+const getUrgentThreshold = () => new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+
 export default function HomeworkPage() {
   const { user, loading: authLoading } = useAuth();
   const { theme } = useTheme();
@@ -33,6 +36,10 @@ export default function HomeworkPage() {
     addHomework
   } = useHomework();
   const { subjects } = useSubjects();
+  
+  // Calculate urgent threshold using lazy initial state (runs only once)
+  const [urgentThreshold] = useState<Date>(getUrgentThreshold);
+  
   const [showAddModal, setShowAddModal] = useState(false);
   const [filter, setFilter] = useState<"all" | "pending" | "urgent" | "completed">("all");
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; homeworkId: string | null }>({ show: false, homeworkId: null });
@@ -107,7 +114,7 @@ export default function HomeworkPage() {
 
   const getItemBg = (item: { completed: boolean; dueDate: Date }) => {
     const isOverdue = !item.completed && item.dueDate < new Date();
-    const isUrgent = !item.completed && item.dueDate <= new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    const isUrgent = !item.completed && item.dueDate <= urgentThreshold;
 
     if (item.completed) return isDark ? "rgba(42, 77, 42, 0.5)" : "rgba(212, 245, 212, 0.5)";
     if (isOverdue) return isDark ? "rgba(153, 27, 27, 0.3)" : "#FEE2E2";
@@ -210,7 +217,7 @@ export default function HomeworkPage() {
                 <AnimatePresence>
                   {filteredHomework.map((item, index) => {
                     const subject = subjects.find(s => s.id === item.subjectId);
-                    const isUrgent = !item.completed && item.dueDate <= new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+                    const isUrgent = !item.completed && item.dueDate <= urgentThreshold;
                     const isOverdue = !item.completed && item.dueDate < new Date();
 
                     return (

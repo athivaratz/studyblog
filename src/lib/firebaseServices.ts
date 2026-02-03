@@ -10,7 +10,6 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  Timestamp,
   addDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -83,6 +82,40 @@ export interface ReviewSession {
   correctAnswers: number;
   duration: number; // seconds
   completedAt: Date;
+}
+
+// =====================
+// Quiz Bank (AI-Generated & CSV Questions)
+// =====================
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  correctAnswer: string;
+  wrongAnswers: string[]; // 3 wrong answers
+  difficulty: "easy" | "medium" | "hard";
+  subjectId: string;
+  subjectName: string;
+  topic?: string;
+  explanation?: string;
+  source: "ai" | "csv" | "flashcard";
+  userId: string;
+  timesUsed: number;
+  correctRate: number; // 0-1
+  createdAt: Date;
+}
+
+export interface QuizBank {
+  id: string;
+  name: string;
+  description?: string;
+  subjectId: string;
+  subjectName: string;
+  questionIds: string[];
+  userId: string;
+  isPublic: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Schedule {
@@ -165,7 +198,7 @@ export const defaultSubjects = [
   { name: "ดนตรี", icon: "music", color: "orange", order: 5 },
 ];
 
-export async function initializeUserSubjects(userId: string): Promise<void> {
+export async function initializeUserSubjects(_userId: string): Promise<void> {
   // Don't create default subjects - let user add their own
   // Just ensure the user can access the subjects collection
   return Promise.resolve();
@@ -609,4 +642,143 @@ export async function initializeNewUser(userId: string): Promise<void> {
     initializeUserStats(userId),
     initializeUserSettings(userId),
   ]);
+}
+
+// =====================
+// Quiz Questions (AI-Generated & CSV)
+// =====================
+
+export async function getQuizQuestions(
+  userId: string,
+  subjectId?: string
+): Promise<QuizQuestion[]> {
+  let q;
+  if (subjectId) {
+    q = query(
+      collection(db, "quizQuestions"),
+      where("userId", "==", userId),
+      where("subjectId", "==", subjectId)
+    );
+  } else {
+    q = query(
+      collection(db, "quizQuestions"),
+      where("userId", "==", userId)
+    );
+  }
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: doc.data().createdAt?.toDate() || new Date(),
+  })) as QuizQuestion[];
+}
+
+export async function createQuizQuestion(
+  userId: string,
+  data: Omit<QuizQuestion, "id" | "userId" | "createdAt" | "timesUsed" | "correctRate">
+): Promise<string> {
+  const docRef = await addDoc(collection(db, "quizQuestions"), {
+    ...data,
+    userId,
+    timesUsed: 0,
+    correctRate: 0,
+    createdAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+export async function createQuizQuestionsBatch(
+  userId: string,
+  questions: Omit<QuizQuestion, "id" | "userId" | "createdAt" | "timesUsed" | "correctRate">[]
+): Promise<string[]> {
+  const ids: string[] = [];
+  for (const question of questions) {
+    const id = await createQuizQuestion(userId, question);
+    ids.push(id);
+  }
+  return ids;
+}
+
+export async function updateQuizQuestion(
+  questionId: string,
+  data: Partial<QuizQuestion>
+): Promise<void> {
+  await updateDoc(doc(db, "quizQuestions", questionId), data);
+}
+
+export async function updateQuizQuestionStats(
+  questionId: string,
+  wasCorrect: boolean
+): Promise<void> {
+  const docRef = doc(db, "quizQuestions", questionId);
+  const docSnap = await getDoc(docRef);
+  
+  if (!docSnap.exists()) return;
+  
+  const data = docSnap.data();
+  const newTimesUsed = (data.timesUsed || 0) + 1;
+  const currentCorrect = (data.timesUsed || 0) * (data.correctRate || 0);
+  const newCorrectRate = (currentCorrect + (wasCorrect ? 1 : 0)) / newTimesUsed;
+  
+  await updateDoc(docRef, {
+    timesUsed: newTimesUsed,
+    correctRate: newCorrectRate,
+  });
+}
+
+export async function deleteQuizQuestion(questionId: string): Promise<void> {
+  await deleteDoc(doc(db, "quizQuestions", questionId));
+}
+
+export async function deleteQuizQuestionsBySubject(
+  userId: string,
+  subjectId: string
+): Promise<void> {
+  const questions = await getQuizQuestions(userId, subjectId);
+  await Promise.all(questions.map((q) => deleteQuizQuestion(q.id)));
+}
+
+// =====================
+// Quiz Banks
+// =====================
+
+export async function getQuizBanks(userId: string): Promise<QuizBank[]> {
+  const q = query(
+    collection(db, "quizBanks"),
+    where("userId", "==", userId)
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: doc.data().createdAt?.toDate() || new Date(),
+    updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+  })) as QuizBank[];
+}
+
+export async function createQuizBank(
+  userId: string,
+  data: Omit<QuizBank, "id" | "userId" | "createdAt" | "updatedAt">
+): Promise<string> {
+  const docRef = await addDoc(collection(db, "quizBanks"), {
+    ...data,
+    userId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+export async function updateQuizBank(
+  bankId: string,
+  data: Partial<QuizBank>
+): Promise<void> {
+  await updateDoc(doc(db, "quizBanks", bankId), {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteQuizBank(bankId: string): Promise<void> {
+  await deleteDoc(doc(db, "quizBanks", bankId));
 }

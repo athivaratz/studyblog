@@ -7,11 +7,21 @@ import { PaperCard, RetroButton } from "@/components/ui";
 import { useSubjects } from "@/hooks/useFirebaseData";
 import { useTheme } from "@/contexts/ThemeContext";
 
+interface ScheduleFormData {
+  subjectId: string;
+  subjectName?: string;
+  startTime: string;
+  endTime: string;
+  room?: string;
+  teacher?: string;
+  dayOfWeek: number;
+}
+
 interface AddScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
   dayOfWeek: number;
-  onAdd: (data: any) => Promise<void>;
+  onAdd: (data: ScheduleFormData) => Promise<void>;
 }
 
 const dayNamesFull = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];

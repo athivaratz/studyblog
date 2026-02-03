@@ -1,88 +1,75 @@
 # studyblog - AI Coding Instructions
 
-## Overview
-studyblog is a **Y2K-aesthetic academic organizer PWA** built with Next.js 16, React 19, Firebase, and Tailwind CSS 4. It targets Thai students with a nostalgic paper/folder visual design. All UI text is in Thai.
+## 1. Project Overview
+**studyblog** is an academic organizer PWA for Thai students, featuring a nostalgic **Y2K aesthetic**.
+- **Stack**: Next.js 16 (App Router), React 19, Firebase v12, Tailwind CSS v4.
+- **Language**: TypeScript throughout.
+- **Localization**: UI text MUST be in **Thai** (font: `Kanit`). Headings use `Felipa`.
+- **Target**: Mobile-first PWA, but fully responsive for desktop.
 
-## Architecture
+## 2. Architecture & Data Flow
 
-### Data Flow
-```
-Firebase Auth → AuthContext → useAuth() hook
-Firestore → firebaseServices.ts → useFirebaseData hooks → Components
-```
+### Firebase Integration
+Data flow is strictly uni-directional from service to hook to component:
+1.  **Service Layer** (`src/lib/firebaseServices.ts`):
+    -   Raw Firestore operations using the modular SDK (`getDocs`, `addDoc`).
+    -   Type definitions (`Subject`, `Homework`, `Todo`).
+    -   **Pattern**: Return simple Promises. Do not manage state here.
+2.  **Hooks Layer** (`src/hooks/useFirebaseData.ts`):
+    -   Consumes services and `useAuth`.
+    -   Manages local state (`const [data, setData] = useState(...)`).
+    -   Exposes CRUD methods (`addSubject`, `deleteTodo`).
+    -   **Pattern**: Always handle `loading` and `error` states.
+3.  **Contexts** (`src/contexts/`):
+    -   Global app state: `AuthContext` (User), `ThemeContext` (Dark/Light), `MusicContext` (Player).
+    -   Wrapped in `src/app/providers.tsx`.
 
-- **Contexts** (`src/contexts/`): Wrap app in `Providers` (`src/app/providers.tsx`) with order: Theme → Music → Auth
-- **Hooks** (`src/hooks/useFirebaseData.ts`): All Firestore CRUD operations exposed via custom hooks (`useSubjects`, `useHomework`, `useTodos`, `useSchedule`, `useUserStats`, `useUserSettings`)
-- **Services** (`src/lib/firebaseServices.ts`): Raw Firestore operations with TypeScript interfaces
+### Component Structure
+-   **`src/components/ui/`**: Reusable primitives with Y2K styling (e.g., `PaperCard`, `RetroButton`).
+-   **`src/components/widgets/`**: Functional blocks like `TimerWidget`, `MusicPlayer`.
+-   **`src/components/layout/`**: `DesktopLayout`, `FolderLayout`.
+-   **Imports**: Use barrel files! `import { PaperCard } from "@/components/ui"`.
 
-### Component Organization
-```
-src/components/
-├── auth/       # Login components
-├── layout/     # DesktopLayout, FolderLayout, Navbar
-├── tutorial/   # Onboarding overlay
-├── ui/         # Reusable Y2K-styled primitives
-└── widgets/    # Clock, Timer, Music, Todo widgets
-```
+## 3. Styling & Y2K Aesthetic
+-   **Tailwind v4**: Uses `@import "tailwindcss";` in `globals.css`.
+-   **Design Tokens**: Use CSS variables defined in `globals.css`:
+    -   Colors: `--pastel-yellow`, `--pastel-pink`, `--paper-white`.
+    -   Borders: `--border-black`.
+-   **Core UI Pattern**:
+    -   **Borders**: `border-2 border-black` (or `var(--border-black)`).
+    -   **Shadows**: Use custom `shadow-hard`, `shadow-hard-sm` for that distinct hard-edge retro look.
+    -   **Rounded**: Generally `rounded-xl` or `rounded-2xl` for soft but boxed feel.
+-   **Dark Mode**:
+    -   Respect `dark:` variants.
+    -   Backgrounds change from `bg-[#FFFEF9]` (paper) to `bg-[#2D2D2D]` (dark grey/black).
 
-Each folder has an `index.ts` barrel export. Import from folder, not file: `import { PaperCard } from "@/components/ui"`.
+## 4. Coding Conventions
+-   **Directives**: Always add `"use client"` at the top of interactive components.
+-   **Icons**: Use `lucide-react`.
+-   **Animation**: `framer-motion` for transitions.
+-   **Mobile First**: Design for `<640px` first, then add `lg:` for desktop overrides.
+-   **Files**:
+    -   Next.js App Router: `page.tsx` for routes.
+    -   Use `index.ts` to export folder contents.
 
-## Key Patterns
+## 5. Critical Developer Commands
+-   **Dev Server**: `bun run dev` (Port 3000).
+-   **Build**: `bun run build`.
+-   **Lint**: `bun run lint`.
+-   **Testing**: No automated tests currently. Test manually in browser/simulator.
 
-### Component Creation
-- Always add `"use client"` directive for interactive components
-- Use Framer Motion for animations (`motion.div`, `AnimatePresence`)
-- Follow Y2K design: `border-2 border-black`, `shadow-hard` class, pastel colors from CSS vars
-- Support dark mode: always pair light/dark classes (e.g., `bg-[#FFFEF9] dark:bg-[#2D2D2D]`)
+## 6. Common Tasks
+-   **Adding a Collection**:
+    1.  Add interface to `src/lib/firebaseServices.ts`.
+    2.  Add CRUD functions to `src/lib/firebaseServices.ts`.
+    3.  Create/Update hook in `src/hooks/useFirebaseData.ts`.
+    4.  Update UI to consume hook.
+-   **New Page**:
+    1.  Create `src/app/[feature]/page.tsx`.
+    2.  Use `FolderLayout` or `DesktopLayout` wrapper.
+    3.  Add entry to `Navbar.tsx` or `DesktopLayout.tsx` navigation.
 
-### Styling Conventions
-- **Fonts**: `font-felipa` (decorative headings), `font-kanit` (Thai body text)
-- **Colors**: Use CSS variables from `globals.css` (`--pastel-yellow`, `--pastel-pink`, etc.)
-- **Shadows**: `shadow-hard`, `shadow-hard-sm`, `shadow-hard-lg` (not regular Tailwind shadows)
-- **Responsive**: Mobile-first, use `lg:` prefix for desktop adjustments
-
-### Firebase Data Hooks
-```tsx
-// Always destructure loading/error states
-const { subjects, loading, error, addSubject, removeSubject } = useSubjects();
-
-// Hooks auto-fetch on mount and refetch after mutations
-// User context comes from useAuth() - never pass userId manually to hooks
-```
-
-### Adding New Firestore Collections
-1. Define TypeScript interface in `firebaseServices.ts`
-2. Add CRUD functions following existing patterns (use `serverTimestamp()`, `where("userId", "==", userId)`)
-3. Create hook in `useFirebaseData.ts` following `useSubjects` pattern
-4. Export from `src/hooks/index.ts`
-
-## Development
-
-```bash
-bun run dev    # Start dev server (port 3000)
-bun run build  # Production build
-bun run lint   # ESLint
-```
-
-### Environment Variables
-Create `.env.local` with Firebase config:
-```
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
-```
-
-## File Conventions
-- Pages: `src/app/[route]/page.tsx` (Next.js App Router)
-- New UI components: Add to `src/components/ui/`, export from `index.ts`
-- New widgets: Add to `src/components/widgets/`, export from `index.ts`
-- Lucide icons only: `import { IconName } from "lucide-react"`
-
-## Critical Notes
-- **Thai-first UI**: All user-facing strings in Thai
-- **PWA-ready**: Manifest at `public/manifest.json`, icons in `public/icons/`
-- **Dark mode forced**: Currently `forceDarkMode=true` in ThemeContext
-- **No test framework**: Project has no test setup currently
+## 7. Known Issues / Quirks
+-   **Firebase Indexes**: If queries fail, check browser console for index creation links.
+-   **Hydration**: Ensure `useEffect` is used for client-side only logic to avoid mismatched content.
+-   **CSS Variables**: Tailwind 4 automatically picks up CSS variables, so you can use `bg-[--pastel-pink]` directly if needed, but prefer defined utility classes if available.

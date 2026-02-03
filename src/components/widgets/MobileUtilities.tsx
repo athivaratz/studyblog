@@ -139,7 +139,7 @@ export function MobileUtilities({ isOpen, onClose }: MobileUtilitiesProps) {
                             key={i}
                             className="w-2 rounded-full"
                             style={{ backgroundColor: primaryColor }}
-                            animate={{ height: [4, Math.random() * 24 + 4, 4] }}
+                            animate={{ height: [4, 12 + (i % 4) * 6, 4] }}
                             transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.08 }}
                           />
                         ))

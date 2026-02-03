@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useSchedule, useSubjects, useInitializeUser } from "@/hooks/useFirebaseData";
+import { Schedule } from "@/lib/firebaseServices";
 import {
   Loader2,
   Plus,
@@ -38,7 +39,7 @@ function ScheduleDashboard() {
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     mode: 'add' | 'edit';
-    initialData: any | null;
+    initialData: Schedule | null;
   }>({
     isOpen: false,
     mode: 'add',
@@ -62,7 +63,7 @@ function ScheduleDashboard() {
     });
   };
 
-  const handleOpenEdit = (item: any) => {
+  const handleOpenEdit = (item: Schedule) => {
     setModalState({
       isOpen: true,
       mode: 'edit',
@@ -70,7 +71,7 @@ function ScheduleDashboard() {
     });
   };
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: Omit<Schedule, 'id' | 'userId'>) => {
     if (modalState.mode === 'add') {
       await addScheduleItem(data);
     } else if (modalState.mode === 'edit' && modalState.initialData) {

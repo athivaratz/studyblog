@@ -91,7 +91,7 @@ export function MusicPlayer({ className = "" }: MusicPlayerProps) {
                   key={i}
                   className={`w-2 rounded-full ${isDark ? 'bg-[#FF8A8A]' : 'bg-[#FF6B6B]'}`}
                   animate={{
-                    height: [4, Math.random() * 20 + 4, 4],
+                    height: [4, 10 + (i % 4) * 5, 4],
                   }}
                   transition={{
                     duration: 0.5,

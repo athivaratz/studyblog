@@ -2,6 +2,9 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+
+// Helper to get urgent threshold (2 days from now)
+const getUrgentThreshold = () => new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
 import Link from "next/link";
 import { Navbar, MobileHeader, LoadingScreen } from "@/components/layout";
 import { FolderCard, ConfirmDialog } from "@/components/ui";
@@ -29,33 +32,6 @@ const categoryLabels = {
   other: "อื่นๆ",
 };
 
-// Stats Card Component
-function StatsCard({ value, label }: { value: number; label: string }) {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-
-  const primaryColor = "#00568C";
-  const bgColor = isDark ? "#2D2D2D" : "#FFFFFF";
-  const borderColor = primaryColor;
-  const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
-  const mutedColor = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
-
-  return (
-    <motion.div
-      className="rounded-2xl border-2 p-4 text-center"
-      style={{ backgroundColor: bgColor, borderColor }}
-      whileHover={{ scale: 1.02 }}
-    >
-      <p className="font-felipa text-3xl lg:text-4xl" style={{ color: primaryColor }}>
-        {value}
-      </p>
-      <p className="font-kanit text-xs lg:text-sm" style={{ color: mutedColor }}>
-        {label}
-      </p>
-    </motion.div>
-  );
-}
-
 // Todo Dashboard
 function TodoDashboard() {
   const { userProfile } = useAuth();
@@ -78,14 +54,15 @@ function TodoDashboard() {
 
   // Theme colors
   const primaryColor = "#00568C";
-  const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
   const textFaint = isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)";
   const borderColor = primaryColor;
-  const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
   const dropdownBg = isDark ? "#3D3D3D" : "#FFFFFF";
   const hoverBg = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)";
   const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
+
+  // Calculate urgent threshold using lazy initial state (runs only once)
+  const [urgentThreshold] = useState<Date>(getUrgentThreshold);
 
   // Filter todos
   const filteredTodos = filter === "all"
@@ -94,7 +71,7 @@ function TodoDashboard() {
 
   const pendingFiltered = filteredTodos.filter(t => !t.completed);
   const urgentCount = todos.filter(t => !t.completed && t.dueDate &&
-    t.dueDate <= new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)).length;
+    t.dueDate <= urgentThreshold).length;
 
   // Format date
   const formatDueDate = (date?: Date) => {

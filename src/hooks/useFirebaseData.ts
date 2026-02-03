@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  Subject,
   Homework,
   Todo,
   Schedule,
@@ -11,7 +10,7 @@ import {
   UserSettings,
   Flashcard,
   ReviewSession,
-  getSubjects,
+  QuizQuestion,
   getHomework,
   getTodos,
   getSchedule,
@@ -19,24 +18,26 @@ import {
   getUserStats,
   getUserSettings,
   getFlashcards,
-  getFlashcardsDueForReview,
   getReviewSessions,
-  createSubject,
+  getQuizQuestions,
   createHomework,
   createTodo,
   createScheduleItem,
   createFlashcard,
+  createQuizQuestion,
+  createQuizQuestionsBatch,
   saveReviewSession,
-  updateSubject,
   updateHomework,
   updateTodo,
   updateScheduleItem,
   updateFlashcardAfterReview,
-  deleteSubject,
+  updateQuizQuestionStats,
   deleteHomework,
   deleteTodo,
   deleteScheduleItem,
   deleteFlashcard,
+  deleteQuizQuestion,
+  deleteQuizQuestionsBySubject,
   completeHomework,
   updateUserStats,
   updateUserSettings,
@@ -514,4 +515,97 @@ export function useInitializeUser() {
   }, [user]);
 
   return { initialized, loading };
+}
+
+// =====================
+// useQuizQuestions Hook (AI-Generated & CSV Questions)
+// =====================
+
+export function useQuizQuestions(subjectId?: string) {
+  const { user } = useAuth();
+  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchQuestions = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const data = await getQuizQuestions(user.uid, subjectId);
+      setQuestions(data);
+      setError(null);
+    } catch (err) {
+      setError("ไม่สามารถโหลดคำถามได้");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, subjectId]);
+
+  useEffect(() => {
+    fetchQuestions();
+  }, [fetchQuestions]);
+
+  const addQuestion = async (
+    data: Omit<QuizQuestion, "id" | "userId" | "createdAt" | "timesUsed" | "correctRate">
+  ) => {
+    if (!user) return;
+    await createQuizQuestion(user.uid, data);
+    await fetchQuestions();
+  };
+
+  const addQuestions = async (
+    questionsData: Omit<QuizQuestion, "id" | "userId" | "createdAt" | "timesUsed" | "correctRate">[]
+  ) => {
+    if (!user) return;
+    await createQuizQuestionsBatch(user.uid, questionsData);
+    await fetchQuestions();
+  };
+
+  const updateStats = async (questionId: string, wasCorrect: boolean) => {
+    await updateQuizQuestionStats(questionId, wasCorrect);
+    await fetchQuestions();
+  };
+
+  const removeQuestion = async (id: string) => {
+    await deleteQuizQuestion(id);
+    await fetchQuestions();
+  };
+
+  const removeQuestionsBySubject = async (subjId: string) => {
+    if (!user) return;
+    await deleteQuizQuestionsBySubject(user.uid, subjId);
+    await fetchQuestions();
+  };
+
+  // Get questions by difficulty
+  const easyQuestions = questions.filter((q) => q.difficulty === "easy");
+  const mediumQuestions = questions.filter((q) => q.difficulty === "medium");
+  const hardQuestions = questions.filter((q) => q.difficulty === "hard");
+
+  // Get questions by source
+  const aiQuestions = questions.filter((q) => q.source === "ai");
+  const csvQuestions = questions.filter((q) => q.source === "csv");
+  const flashcardQuestions = questions.filter((q) => q.source === "flashcard");
+
+  return {
+    questions,
+    easyQuestions,
+    mediumQuestions,
+    hardQuestions,
+    aiQuestions,
+    csvQuestions,
+    flashcardQuestions,
+    loading,
+    generating,
+    setGenerating,
+    error,
+    addQuestion,
+    addQuestions,
+    updateStats,
+    removeQuestion,
+    removeQuestionsBySubject,
+    refetch: fetchQuestions,
+  };
 }

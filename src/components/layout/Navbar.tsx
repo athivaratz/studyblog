@@ -222,7 +222,7 @@ export function Navbar() {
               key={item.href}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              id={(item as any).id}
+              id={(item as { id?: string }).id}
             >
               <Link href={item.href}>
                 <motion.div

@@ -1,15 +1,15 @@
 "use client";
 
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
 import { Navbar, MobileHeader, LoadingScreen } from "@/components/layout";
 import { FolderCard } from "@/components/ui";
-import { ClockTimerWidget, IPodPlayer, MobileUtilities } from "@/components/widgets";
+import { ClockTimerWidget, IPodPlayer, MobileUtilities, CSVImportModal, AIQuizGenerator } from "@/components/widgets";
 import { TutorialOverlay } from "@/components/tutorial";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
-import { useFlashcards, useSubjects, useInitializeUser, useReviewSessions } from "@/hooks/useFirebaseData";
+import { useFlashcards, useSubjects, useInitializeUser, useReviewSessions, useQuizQuestions } from "@/hooks/useFirebaseData";
 import {
   Loader2,
   Plus,
@@ -20,7 +20,10 @@ import {
   Check,
   RotateCcw,
   ChevronDown,
-  Trash2
+  Trash2,
+  Sparkles,
+  FileSpreadsheet,
+  BookOpen
 } from "lucide-react";
 
 // Primary color
@@ -46,12 +49,11 @@ interface GameState {
 }
 
 // Stats Card Component
-function StatsCard({ value, label, icon: Icon }: { value: number | string; label: string; icon?: React.ComponentType<{ className?: string }> }) {
+function StatsCard({ value, label }: { value: number | string; label: string }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
   const bgColor = isDark ? "#2D2D2D" : "#FFFFFF";
-  const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const mutedColor = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
 
   return (
@@ -77,6 +79,7 @@ function ReviewDashboard() {
   const { subjects } = useSubjects();
   const { flashcards, dueForReview, loading, addFlashcard, removeFlashcard, reviewFlashcard } = useFlashcards();
   const { stats, addSession } = useReviewSessions();
+  const { questions: quizQuestions, addQuestions } = useQuizQuestions();
 
   const [gameState, setGameState] = useState<GameState>({
     mode: null,
@@ -91,13 +94,14 @@ function ReviewDashboard() {
   });
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [showCSVImport, setShowCSVImport] = useState(false);
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>("all");
   const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
 
   // Theme colors
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
-  const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
   const borderColor = primaryColor;
   const dropdownBg = isDark ? "#3D3D3D" : "#FFFFFF";
   const hoverBg = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)";
@@ -329,6 +333,90 @@ function ReviewDashboard() {
               </div>
             </FolderCard>
 
+            {/* AI Quiz Tools */}
+            <FolderCard title="เครื่องมือสร้างโจทย์">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {/* AI Generator Button */}
+                <motion.button
+                  onClick={() => setShowAIGenerator(true)}
+                  className="p-4 rounded-xl border-2 text-left flex items-center gap-3"
+                  style={{
+                    backgroundColor: isDark ? "#2A3D4D" : "#E0F2FE",
+                    borderColor: primaryColor,
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    <Sparkles className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-kanit font-bold" style={{ color: textColor }}>
+                      AI สร้างโจทย์
+                    </h4>
+                    <p className="font-kanit text-xs" style={{ color: textMuted }}>
+                      ใช้ Gemini AI สร้างคำถามจากหลักสูตร
+                    </p>
+                  </div>
+                </motion.button>
+
+                {/* CSV Import Button */}
+                <motion.button
+                  onClick={() => setShowCSVImport(true)}
+                  className="p-4 rounded-xl border-2 text-left flex items-center gap-3"
+                  style={{
+                    backgroundColor: isDark ? "#3D4D2A" : "#ECFCCB",
+                    borderColor: "#84CC16",
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: "#84CC16" }}
+                  >
+                    <FileSpreadsheet className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-kanit font-bold" style={{ color: textColor }}>
+                      Import CSV
+                    </h4>
+                    <p className="font-kanit text-xs" style={{ color: textMuted }}>
+                      นำเข้าคำถามจากไฟล์ CSV ของคุณ
+                    </p>
+                  </div>
+                </motion.button>
+              </div>
+
+              {/* AI Questions Summary */}
+              {quizQuestions.length > 0 && (
+                <div className="mt-4 p-3 rounded-xl" style={{ backgroundColor: isDark ? "#3D3D3D" : "#F8F8F8" }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4" style={{ color: primaryColor }} />
+                      <span className="font-kanit text-sm" style={{ color: textColor }}>
+                        คำถาม AI/CSV: <span className="font-bold">{quizQuestions.length}</span> ข้อ
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="font-kanit text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                        ง่าย: {quizQuestions.filter(q => q.difficulty === "easy").length}
+                      </span>
+                      <span className="font-kanit text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">
+                        กลาง: {quizQuestions.filter(q => q.difficulty === "medium").length}
+                      </span>
+                      <span className="font-kanit text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                        ยาก: {quizQuestions.filter(q => q.difficulty === "hard").length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </FolderCard>
+
             {/* Flashcards Section */}
             <FolderCard
               title="การ์ดของฉัน"
@@ -480,6 +568,46 @@ function ReviewDashboard() {
         }}
         subjects={subjects}
       />
+
+      {/* AI Quiz Generator Modal */}
+      <AIQuizGenerator
+        isOpen={showAIGenerator}
+        onClose={() => setShowAIGenerator(false)}
+        subjects={subjects}
+        flashcards={flashcards}
+        onGenerate={async (questions) => {
+          await addQuestions(questions.map(q => ({
+            question: q.question,
+            correctAnswer: q.correctAnswer,
+            wrongAnswers: q.wrongAnswers,
+            difficulty: q.difficulty,
+            subjectId: q.subjectId,
+            subjectName: q.subjectName,
+            topic: q.topic,
+            explanation: q.explanation,
+            source: q.source,
+          })));
+        }}
+      />
+
+      {/* CSV Import Modal */}
+      <CSVImportModal
+        isOpen={showCSVImport}
+        onClose={() => setShowCSVImport(false)}
+        subjects={subjects}
+        onImport={async (questions) => {
+          await addQuestions(questions.map(q => ({
+            question: q.question,
+            correctAnswer: q.correctAnswer,
+            wrongAnswers: q.wrongAnswers,
+            difficulty: q.difficulty,
+            subjectId: q.subjectId,
+            subjectName: q.subjectName,
+            topic: q.topic,
+            source: q.source,
+          })));
+        }}
+      />
     </div>
   );
 }
@@ -498,7 +626,6 @@ function GameScreen({
   const isDark = theme === "dark";
   const [showAnswer, setShowAnswer] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [options, setOptions] = useState<string[]>([]);
 
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
@@ -510,22 +637,29 @@ function GameScreen({
   const isGameOver = gameState.currentQuestion >= gameState.totalQuestions ||
     (gameState.mode === "speed" && gameState.timeLeft <= 0);
 
-  // Generate multiple choice options
-  useEffect(() => {
+  // Generate multiple choice options using useMemo to avoid setState in effect
+  const computedOptions = useMemo(() => {
     if (currentCard && gameState.mode !== "quiz") {
       const correctAnswer = currentCard.back;
       const otherCards = gameState.cards.filter(c => c.id !== currentCard.id);
       const wrongAnswers = otherCards
-        .sort(() => Math.random() - 0.5)
         .slice(0, 3)
         .map(c => c.back);
 
-      const allOptions = [correctAnswer, ...wrongAnswers].sort(() => Math.random() - 0.5);
-      setOptions(allOptions);
+      // Shuffle options deterministically based on currentQuestion
+      const allOptions = [correctAnswer, ...wrongAnswers];
+      // Simple shuffle based on question index
+      const shuffled = allOptions.sort((a, b) => {
+        const hash = (s: string) => s.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+        return (hash(a) + gameState.currentQuestion) % 10 - (hash(b) + gameState.currentQuestion) % 10;
+      });
+      return shuffled;
     }
-    setShowAnswer(false);
-    setSelectedOption(null);
-  }, [currentCard, gameState.mode, gameState.cards]);
+    return [];
+  }, [currentCard, gameState.mode, gameState.cards, gameState.currentQuestion]);
+
+  // Use computedOptions directly - no need for separate state
+  const activeOptions = computedOptions;
 
   // Handle quiz mode (show card, flip to see answer)
   const handleFlip = () => {
@@ -541,7 +675,7 @@ function GameScreen({
   const handleSelectOption = (index: number) => {
     if (selectedOption !== null) return;
     setSelectedOption(index);
-    const isCorrect = options[index] === currentCard.back;
+    const isCorrect = activeOptions[index] === currentCard.back;
 
     setTimeout(() => {
       onAnswer(isCorrect);
@@ -673,7 +807,7 @@ function GameScreen({
             </div>
 
             <div className="space-y-3">
-              {options.map((option, index) => {
+              {activeOptions.map((option, index) => {
                 const isCorrect = option === currentCard.back;
                 const isSelected = selectedOption === index;
 

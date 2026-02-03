@@ -238,7 +238,7 @@ export function TutorialOverlay() {
     const gap = 20;
     const tooltipWidth = 320; // Approx width
 
-    let style: any = { position: "fixed", zIndex: 100, width: tooltipWidth };
+    const style: React.CSSProperties = { position: "fixed", zIndex: 100, width: tooltipWidth };
 
     // Simple logic: prefer step.position
     if (step.position === "top") {
