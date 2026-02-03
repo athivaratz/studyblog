@@ -2,13 +2,13 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { DesktopLayout, Navbar } from "@/components/layout";
-import { PaperCard, RetroButton } from "@/components/ui";
+import { PaperCard, RetroButton, ConfirmDialog } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useHomework, useSubjects } from "@/hooks/useFirebaseData";
-import { 
-  ClipboardList, 
+import {
+  ClipboardList,
   Plus,
   Loader2,
   Calendar,
@@ -23,9 +23,9 @@ export default function HomeworkPage() {
   const { user, loading: authLoading } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const { 
-    pendingHomework, 
-    completedHomework, 
+  const {
+    pendingHomework,
+    completedHomework,
     urgentHomework,
     loading: homeworkLoading,
     completeHomeworkItem,
@@ -35,6 +35,7 @@ export default function HomeworkPage() {
   const { subjects } = useSubjects();
   const [showAddModal, setShowAddModal] = useState(false);
   const [filter, setFilter] = useState<"all" | "pending" | "urgent" | "completed">("all");
+  const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; homeworkId: string | null }>({ show: false, homeworkId: null });
 
   const bgColor = isDark ? "#1A1A1A" : "#FFF8E7";
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
@@ -44,7 +45,7 @@ export default function HomeworkPage() {
   const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#1A1A1A";
   const borderMuted = isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)";
   const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
-  
+
   const bgColors: Record<string, string> = {
     yellow: isDark ? "#4D4A2A" : "#FFF3B0",
     pink: isDark ? "#5C3A42" : "#FFD6E0",
@@ -65,7 +66,7 @@ export default function HomeworkPage() {
 
   if (authLoading) {
     return (
-      <div 
+      <div
         className="min-h-screen flex items-center justify-center"
         style={{ backgroundColor: bgColor }}
       >
@@ -81,8 +82,8 @@ export default function HomeworkPage() {
   const formatDueDate = (date: Date) => {
     const now = new Date();
     const diff = date.getTime() - now.getTime();
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 1000));
-    
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
     if (days < 0) return "เลยกำหนด";
     if (days === 0) return "วันนี้";
     if (days === 1) return "พรุ่งนี้";
@@ -107,7 +108,7 @@ export default function HomeworkPage() {
   const getItemBg = (item: { completed: boolean; dueDate: Date }) => {
     const isOverdue = !item.completed && item.dueDate < new Date();
     const isUrgent = !item.completed && item.dueDate <= new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-    
+
     if (item.completed) return isDark ? "rgba(42, 77, 42, 0.5)" : "rgba(212, 245, 212, 0.5)";
     if (isOverdue) return isDark ? "rgba(153, 27, 27, 0.3)" : "#FEE2E2";
     if (isUrgent) return bgColors.pink;
@@ -130,8 +131,8 @@ export default function HomeworkPage() {
                 <ClipboardList className="w-7 h-7 text-[#FF6B6B]" />
                 การบ้านทั้งหมด
               </h2>
-              <RetroButton 
-                color="pink" 
+              <RetroButton
+                color="pink"
                 size="sm"
                 onClick={() => setShowAddModal(true)}
               >
@@ -145,7 +146,7 @@ export default function HomeworkPage() {
               <motion.button
                 onClick={() => setFilter("all")}
                 className="p-4 rounded-xl border-2 text-center transition-all cursor-pointer"
-                style={{ 
+                style={{
                   borderColor: filter === "all" ? borderColor : borderMuted,
                   backgroundColor: filter === "all" ? bgColors.yellow : "transparent"
                 }}
@@ -155,11 +156,11 @@ export default function HomeworkPage() {
                 <p className="font-felipa text-2xl" style={{ color: textColor }}>{pendingHomework.length + completedHomework.length}</p>
                 <p className="font-kanit text-xs" style={{ color: textMuted }}>ทั้งหมด</p>
               </motion.button>
-              
+
               <motion.button
                 onClick={() => setFilter("pending")}
                 className="p-4 rounded-xl border-2 text-center transition-all cursor-pointer"
-                style={{ 
+                style={{
                   borderColor: filter === "pending" ? borderColor : borderMuted,
                   backgroundColor: filter === "pending" ? bgColors.blue : "transparent"
                 }}
@@ -173,7 +174,7 @@ export default function HomeworkPage() {
               <motion.button
                 onClick={() => setFilter("urgent")}
                 className="p-4 rounded-xl border-2 text-center transition-all cursor-pointer"
-                style={{ 
+                style={{
                   borderColor: filter === "urgent" ? borderColor : borderMuted,
                   backgroundColor: filter === "urgent" ? bgColors.pink : "transparent"
                 }}
@@ -187,7 +188,7 @@ export default function HomeworkPage() {
               <motion.button
                 onClick={() => setFilter("completed")}
                 className="p-4 rounded-xl border-2 text-center transition-all cursor-pointer"
-                style={{ 
+                style={{
                   borderColor: filter === "completed" ? borderColor : borderMuted,
                   backgroundColor: filter === "completed" ? bgColors.green : "transparent"
                 }}
@@ -220,7 +221,7 @@ export default function HomeworkPage() {
                         exit={{ opacity: 0, x: -100 }}
                         transition={{ delay: index * 0.05 }}
                         className="flex items-center gap-4 p-4 rounded-xl border-2"
-                        style={{ 
+                        style={{
                           borderColor: borderColor,
                           backgroundColor: getItemBg(item)
                         }}
@@ -242,7 +243,7 @@ export default function HomeworkPage() {
                         {/* Subject color indicator */}
                         <div
                           className="w-2 h-12 rounded-full border"
-                          style={{ 
+                          style={{
                             backgroundColor: colorIndicators[subject?.color || "yellow"],
                             borderColor: borderColor
                           }}
@@ -250,7 +251,7 @@ export default function HomeworkPage() {
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <p 
+                          <p
                             className={`font-kanit font-medium truncate ${item.completed ? "line-through" : ""}`}
                             style={{ color: item.completed ? textFaint : textColor }}
                           >
@@ -268,7 +269,7 @@ export default function HomeworkPage() {
 
                         {/* Due date badge */}
                         {!item.completed && (
-                          <div 
+                          <div
                             className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-kanit border-2"
                             style={{
                               borderColor: isDark ? "rgba(255,255,255,0.3)" : "#1A1A1A",
@@ -283,7 +284,7 @@ export default function HomeworkPage() {
 
                         {/* Delete button */}
                         <motion.button
-                          onClick={() => removeHomework(item.id)}
+                          onClick={() => setConfirmDelete({ show: true, homeworkId: item.id })}
                           className="p-2 rounded-full cursor-pointer hover:opacity-70"
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
@@ -302,8 +303,8 @@ export default function HomeworkPage() {
                   {filter === "completed" ? "ยังไม่มีการบ้านที่เสร็จ" : "ไม่มีการบ้าน!"}
                 </h3>
                 <p className="font-kanit" style={{ color: textMuted }}>
-                  {filter === "completed" 
-                    ? "ทำการบ้านเสร็จแล้วจะแสดงที่นี่" 
+                  {filter === "completed"
+                    ? "ทำการบ้านเสร็จแล้วจะแสดงที่นี่"
                     : "เยี่ยมมาก! คุณทำการบ้านครบหมดแล้ว"
                   }
                 </p>
@@ -326,6 +327,23 @@ export default function HomeworkPage() {
             }}
           />
         )}
+
+        {/* Confirm Delete Dialog */}
+        <ConfirmDialog
+          isOpen={confirmDelete.show}
+          title="ลบการบ้าน?"
+          message="คุณต้องการลบการบ้านนี้หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้"
+          confirmText="ลบ"
+          cancelText="ยกเลิก"
+          variant="danger"
+          onConfirm={() => {
+            if (confirmDelete.homeworkId) {
+              removeHomework(confirmDelete.homeworkId);
+            }
+            setConfirmDelete({ show: false, homeworkId: null });
+          }}
+          onCancel={() => setConfirmDelete({ show: false, homeworkId: null })}
+        />
       </div>
     </DesktopLayout>
   );
@@ -377,7 +395,7 @@ function AddHomeworkModal({
       onClick={onClose}
     >
       <div className="absolute inset-0 bg-black/50" />
-      
+
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}

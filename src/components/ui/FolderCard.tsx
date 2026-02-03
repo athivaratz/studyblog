@@ -9,17 +9,19 @@ interface FolderCardProps {
   children: ReactNode;
   className?: string;
   headerAction?: ReactNode;
+  id?: string;
 }
 
-export function FolderCard({ 
-  title, 
-  children, 
+export function FolderCard({
+  title,
+  children,
   className = "",
-  headerAction 
+  headerAction,
+  id
 }: FolderCardProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  
+
   const primaryColor = "#00568C";
   const bgColor = isDark ? "#2D2D2D" : "#FFFFFF";
   const borderColor = primaryColor;
@@ -36,6 +38,7 @@ export function FolderCard({
 
   return (
     <motion.div
+      id={id}
       className={`relative rounded-2xl overflow-hidden ${className}`}
       style={{
         backgroundColor: bgColor,
@@ -45,7 +48,7 @@ export function FolderCard({
       animate={{ opacity: 1, y: 0 }}
     >
       {/* Folder tab (top-left ear) */}
-      <div 
+      <div
         className="absolute -top-px -left-px"
         style={{
           width: 120,
@@ -58,7 +61,7 @@ export function FolderCard({
       />
 
       {/* Header stripe bar */}
-      <div 
+      <div
         className="pt-6"
         style={{
           background: stripePattern,
@@ -67,7 +70,7 @@ export function FolderCard({
       >
         <div className="flex items-center justify-between">
           {title && (
-            <h3 
+            <h3
               className="font-felipa text-xl text-white"
               style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.3)" }}
             >
@@ -84,7 +87,7 @@ export function FolderCard({
       </div>
 
       {/* Bottom stripe bar */}
-      <div 
+      <div
         style={{
           background: stripePattern,
           height: 12,

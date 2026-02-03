@@ -1,17 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
-import { Navbar } from "@/components/layout";
+import { Navbar, MobileHeader, LoadingScreen } from "@/components/layout";
 import { FolderCard } from "@/components/ui";
 import { IPodPlayer, ClockTimerWidget, MobileUtilities } from "@/components/widgets";
-import { TutorialOverlay } from "@/components/tutorial";
+import { TutorialOverlay, useTutorial } from "@/components/tutorial/TutorialOverlay";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useUserSettings, useInitializeUser } from "@/hooks/useFirebaseData";
-import { 
-  Settings as SettingsIcon, 
+import {
   User,
   Bell,
   Moon,
@@ -22,97 +20,13 @@ import {
   ChevronRight,
   Smartphone,
   HelpCircle,
-  Heart,
-  Clock,
-  GraduationCap
+  Heart
 } from "lucide-react";
 import { useState } from "react";
 
 // Primary color
 const primaryColor = "#00568C";
 
-// Loading Screen
-function LoadingScreen() {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-  const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
-  const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
-  const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
-  
-  return (
-    <div 
-      className="min-h-screen flex items-center justify-center"
-      style={{ backgroundColor: pageBg }}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center gap-4"
-      >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 rounded-2xl flex items-center justify-center"
-          style={{ 
-            backgroundColor: cardBg, 
-            border: `3px solid ${primaryColor}`,
-          }}
-        >
-          <GraduationCap className="w-8 h-8" style={{ color: primaryColor }} />
-        </motion.div>
-        <p className="font-kanit" style={{ color: textMuted }}>กำลังโหลด...</p>
-      </motion.div>
-    </div>
-  );
-}
-
-// Mobile Header - Updated layout
-function MobileHeader({ 
-  onUtilitiesClick
-}: { 
-  onUtilitiesClick: () => void;
-}) {
-  const { theme, toggleTheme } = useTheme();
-  const isDark = theme === "dark";
-  
-  const headerBg = isDark ? "#252525" : "#FFFFFF";
-  const borderColor = primaryColor;
-  const buttonBg = isDark ? "#3D3D3D" : "#F0F0F0";
-
-  return (
-    <div 
-      className="xl:hidden fixed top-0 left-0 right-0 z-40 px-4 py-3 flex items-center justify-between border-b-2"
-      style={{ backgroundColor: headerBg, borderColor }}
-    >
-      {/* Left side: Utilities only */}
-      <motion.button
-        onClick={onUtilitiesClick}
-        className="flex items-center gap-2 px-3 py-2 text-white rounded-xl border-2"
-        style={{ backgroundColor: primaryColor, borderColor }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <Clock className="w-4 h-4" />
-        <Music className="w-4 h-4" />
-      </motion.button>
-
-      {/* Right side: Theme toggle */}
-      <motion.button
-        onClick={toggleTheme}
-        className="w-10 h-10 rounded-full border-2 flex items-center justify-center"
-        style={{ backgroundColor: buttonBg, borderColor }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        {isDark ? (
-          <span className="text-lg">☀️</span>
-        ) : (
-          <span className="text-lg">🌙</span>
-        )}
-      </motion.button>
-    </div>
-  );
-}
 
 // Setting Item Component
 function SettingItem({
@@ -122,6 +36,7 @@ function SettingItem({
   value,
   isToggle = false,
   onChange,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -129,6 +44,7 @@ function SettingItem({
   value?: string | boolean;
   isToggle?: boolean;
   onChange?: (value: boolean) => void;
+  onClick?: () => void;
 }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -141,17 +57,18 @@ function SettingItem({
 
   return (
     <motion.div
+      onClick={isToggle ? undefined : onClick}
       className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl transition-colors cursor-pointer"
       whileHover={{ x: 4, backgroundColor: hoverBg }}
     >
       {/* Icon */}
-      <div 
+      <div
         className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
         style={{ backgroundColor: iconBg, color: primaryColor }}
       >
         {icon}
       </div>
-      
+
       {/* Label & Description */}
       <div className="flex-1 min-w-0">
         <p className="font-kanit font-medium text-sm sm:text-base truncate" style={{ color: textColor }}>
@@ -163,13 +80,13 @@ function SettingItem({
           </p>
         )}
       </div>
-      
+
       {/* Toggle / Value / Arrow */}
       {isToggle ? (
         <motion.button
           onClick={() => onChange?.(!value)}
           className="w-12 h-7 rounded-full border-2 p-0.5 transition-colors cursor-pointer shrink-0"
-          style={{ 
+          style={{
             borderColor: primaryColor,
             backgroundColor: value ? primaryColor : (isDark ? "#4B5563" : "#E5E7EB")
           }}
@@ -193,6 +110,126 @@ function SettingItem({
   );
 }
 
+// Edit Profile Modal
+function EditProfileModal({
+  isOpen,
+  onClose,
+  currentName,
+  currentPhoto,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  currentName: string;
+  currentPhoto: string;
+}) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const { updateProfile } = useAuth();
+  const [name, setName] = useState(currentName);
+  const [photoURL, setPhotoURL] = useState(currentPhoto);
+  const [saving, setSaving] = useState(false);
+
+  // Update effect when props change
+  // Note: We use a key on the modal or useEffect to sync props to state if needed
+  // But since we mount/unmount or just open, we can rely on initial state if it's conditional rendered
+  // or use an effect.
+
+  const backdropBg = isDark ? "rgba(0,0,0,0.7)" : "rgba(0,0,0,0.5)";
+  const modalBg = isDark ? "#2D2D2D" : "#FFFFFF";
+  const borderColor = primaryColor;
+  const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
+  const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
+  const inputBg = isDark ? "#3D3D3D" : "#F5F5F5";
+
+  const handleSubmit = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await updateProfile({
+        displayName: name.trim(),
+        photoURL: photoURL.trim() || null,
+      });
+      onClose();
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0" style={{ backgroundColor: backdropBg }} />
+
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        className="relative w-full max-w-md z-10 rounded-2xl border-2 p-6"
+        style={{ backgroundColor: modalBg, borderColor }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="font-felipa text-2xl mb-4" style={{ color: primaryColor }}>
+          แก้ไขโปรไฟล์
+        </h3>
+
+        <div className="space-y-4">
+          <div>
+            <label className="font-kanit text-sm mb-1 block" style={{ color: textMuted }}>
+              ชื่อที่แสดง
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border-2 font-kanit focus:outline-none"
+              style={{ backgroundColor: inputBg, borderColor, color: textColor }}
+            />
+          </div>
+
+          <div>
+            <label className="font-kanit text-sm mb-1 block" style={{ color: textMuted }}>
+              ลิงก์รูปโปรไฟล์ (URL)
+            </label>
+            <input
+              type="text"
+              value={photoURL}
+              onChange={(e) => setPhotoURL(e.target.value)}
+              placeholder="https://example.com/photo.jpg"
+              className="w-full px-4 py-3 rounded-xl border-2 font-kanit focus:outline-none"
+              style={{ backgroundColor: inputBg, borderColor, color: textColor }}
+            />
+          </div>
+
+          <motion.button
+            onClick={handleSubmit}
+            disabled={!name.trim() || saving}
+            className="w-full py-3 rounded-xl border-2 font-kanit font-medium flex items-center justify-center gap-2"
+            style={{
+              backgroundColor: primaryColor,
+              borderColor,
+              color: "#FFFFFF",
+              opacity: (!name.trim() || saving) ? 0.5 : 1
+            }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {saving ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              "บันทึก"
+            )}
+          </motion.button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // Settings Dashboard
 function SettingsDashboard() {
   const { user, userProfile, signOut } = useAuth();
@@ -200,6 +237,8 @@ function SettingsDashboard() {
   const isDark = theme === "dark";
   const { settings, loading: settingsLoading, updateSettings } = useUserSettings();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const { resetTutorial } = useTutorial();
 
   const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
@@ -221,7 +260,7 @@ function SettingsDashboard() {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen"
       style={{ backgroundColor: pageBg }}
     >
@@ -235,7 +274,7 @@ function SettingsDashboard() {
           {/* Left Sidebar - iPod & Clock (Desktop only) */}
           <div className="hidden xl:flex flex-col gap-6">
             <IPodPlayer />
-            <ClockTimerWidget size={180} />
+            <ClockTimerWidget id="tour-utils-desktop" size={180} />
           </div>
 
           {/* Main Content */}
@@ -244,14 +283,14 @@ function SettingsDashboard() {
             <FolderCard title="โปรไฟล์">
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 {/* Profile Image */}
-                <div 
+                <div
                   className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 overflow-hidden shrink-0"
                   style={{ backgroundColor: primaryColor, borderColor: primaryColor }}
                 >
                   {user?.photoURL ? (
-                    <img 
-                      src={user.photoURL} 
-                      alt={user.displayName || "Profile"} 
+                    <img
+                      src={user.photoURL}
+                      alt={user.displayName || "Profile"}
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
                     />
@@ -261,7 +300,7 @@ function SettingsDashboard() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Profile Info */}
                 <div className="flex-1 text-center sm:text-left min-w-0">
                   <h2 className="font-felipa text-xl sm:text-2xl truncate" style={{ color: textColor }}>
@@ -271,7 +310,7 @@ function SettingsDashboard() {
                     {user?.email}
                   </p>
                   <div className="flex items-center justify-center sm:justify-start gap-2 mt-2">
-                    <span 
+                    <span
                       className="px-3 py-1 rounded-full text-xs font-kanit"
                       style={{ backgroundColor: isDark ? "#2A4D2A" : "#D4F5D4", color: textColor }}
                     >
@@ -279,14 +318,15 @@ function SettingsDashboard() {
                     </span>
                   </div>
                 </div>
-                
+
                 {/* Edit Button */}
                 <motion.button
+                  onClick={() => setShowEditProfile(true)}
                   className="px-4 py-2 rounded-xl border-2 font-kanit text-sm font-medium"
-                  style={{ 
-                    backgroundColor: primaryColor, 
+                  style={{
+                    backgroundColor: primaryColor,
                     borderColor: primaryColor,
-                    color: "#FFFFFF" 
+                    color: "#FFFFFF"
                   }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -350,7 +390,9 @@ function SettingsDashboard() {
 
                 <SettingItem
                   icon={<HelpCircle className="w-5 h-5" />}
-                  label="ช่วยเหลือ"
+                  label="แนะนำการใช้งาน (Tutorial)"
+                  description="ดูวิธีการใช้งานเริ่มต้นใหม่อีกครั้ง"
+                  onClick={resetTutorial}
                 />
 
                 <SettingItem
@@ -366,7 +408,7 @@ function SettingsDashboard() {
               onClick={handleSignOut}
               disabled={isSigningOut}
               className="w-full p-4 rounded-xl border-2 flex items-center justify-center gap-3 font-kanit font-medium transition-colors disabled:opacity-50"
-              style={{ 
+              style={{
                 backgroundColor: isDark ? "#5C3A3A" : "#FFE4E4",
                 borderColor: primaryColor,
                 color: isDark ? "#FFFFFF" : "#1A1A1A",
@@ -391,6 +433,14 @@ function SettingsDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={showEditProfile}
+        onClose={() => setShowEditProfile(false)}
+        currentName={userProfile?.displayName || user?.displayName || ""}
+        currentPhoto={user?.photoURL || ""}
+      />
     </div>
   );
 }
@@ -415,16 +465,16 @@ export default function SettingsPage() {
   return (
     <>
       <TutorialOverlay />
-      
-      <MobileUtilities 
-        isOpen={showMobileUtilities} 
-        onClose={() => setShowMobileUtilities(false)} 
+
+      <MobileUtilities
+        isOpen={showMobileUtilities}
+        onClose={() => setShowMobileUtilities(false)}
       />
 
-      <MobileHeader 
+      <MobileHeader
         onUtilitiesClick={() => setShowMobileUtilities(true)}
       />
-      
+
       <div className="pt-16 xl:pt-0">
         <SettingsDashboard />
       </div>

@@ -47,57 +47,10 @@ import {
 // useSubjects Hook
 // =====================
 
+import { useSubjectContext } from "@/contexts/SubjectContext";
+
 export function useSubjects() {
-  const { user } = useAuth();
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchSubjects = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const data = await getSubjects(user.uid);
-      setSubjects(data);
-      setError(null);
-    } catch (err) {
-      setError("ไม่สามารถโหลดวิชาได้");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchSubjects();
-  }, [fetchSubjects]);
-
-  const addSubject = async (data: Omit<Subject, "id" | "userId" | "createdAt">): Promise<string> => {
-    if (!user) return "";
-    const newId = await createSubject(user.uid, data);
-    await fetchSubjects();
-    return newId;
-  };
-
-  const editSubject = async (id: string, data: Partial<Subject>) => {
-    await updateSubject(id, data);
-    await fetchSubjects();
-  };
-
-  const removeSubject = async (id: string) => {
-    await deleteSubject(id);
-    await fetchSubjects();
-  };
-
-  return {
-    subjects,
-    loading,
-    error,
-    addSubject,
-    editSubject,
-    removeSubject,
-    refetch: fetchSubjects,
-  };
+  return useSubjectContext();
 }
 
 // =====================
@@ -153,9 +106,9 @@ export function useHomework(subjectId?: string) {
 
   const completeHomeworkItem = async (id: string, completed: boolean) => {
     if (completed) {
-      await updateHomework(id, { 
-        completed: true, 
-        completedAt: new Date() 
+      await updateHomework(id, {
+        completed: true,
+        completedAt: new Date()
       });
     } else {
       // Use separate update to remove completedAt field
@@ -253,10 +206,10 @@ export function useTodos(categoryFilter?: "all" | "homework" | "personal" | "oth
   const filteredTodos = categoryFilter && categoryFilter !== "all"
     ? todos.filter(t => t.category === categoryFilter)
     : todos;
-  
+
   const pendingTodos = filteredTodos.filter(t => !t.completed);
   const completedTodos = filteredTodos.filter(t => t.completed);
-  
+
   // Overdue todos
   const overdueTodos = pendingTodos.filter(t => {
     if (!t.dueDate) return false;
@@ -297,7 +250,7 @@ export function useSchedule(dayOfWeek?: number) {
         dayOfWeek !== undefined
           ? await getScheduleByDay(user.uid, dayOfWeek)
           : await getSchedule(user.uid);
-      
+
       // Sort by start time
       data.sort((a, b) => a.startTime.localeCompare(b.startTime));
       setSchedule(data);
@@ -546,7 +499,7 @@ export function useInitializeUser() {
   useEffect(() => {
     const initialize = async () => {
       if (!user) return;
-      
+
       try {
         await initializeNewUser(user.uid);
         setInitialized(true);

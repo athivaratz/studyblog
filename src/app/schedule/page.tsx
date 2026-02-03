@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { Navbar } from "@/components/layout";
+import { Navbar, MobileHeader, LoadingScreen } from "@/components/layout";
 import { FolderCard } from "@/components/ui";
 import { ClockTimerWidget, IPodPlayer, MobileUtilities } from "@/components/widgets";
 import { TutorialOverlay } from "@/components/tutorial";
@@ -10,18 +10,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useSchedule, useSubjects, useInitializeUser } from "@/hooks/useFirebaseData";
-import { 
+import {
   Loader2,
   Plus,
-  Clock,
-  Music,
   Calendar,
   Trash2,
   X,
-  GraduationCap,
-  Settings
+  Pencil
 } from "lucide-react";
-import Link from "next/link";
 
 // Primary color
 const primaryColor = "#00568C";
@@ -30,82 +26,6 @@ const primaryColor = "#00568C";
 const dayLabels = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
 const shortDayLabels = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 
-// Loading Screen
-function LoadingScreen() {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-  const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
-  const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
-  const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
-  
-  return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: pageBg }}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center gap-4"
-      >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 rounded-2xl flex items-center justify-center"
-          style={{ backgroundColor: cardBg, border: `3px solid ${primaryColor}` }}
-        >
-          <GraduationCap className="w-8 h-8" style={{ color: primaryColor }} />
-        </motion.div>
-        <p className="font-kanit" style={{ color: textMuted }}>กำลังโหลด...</p>
-      </motion.div>
-    </div>
-  );
-}
-
-// Mobile Header - Updated layout
-function MobileHeader({ 
-  onUtilitiesClick
-}: { 
-  onUtilitiesClick: () => void;
-}) {
-  const { theme, toggleTheme } = useTheme();
-  const isDark = theme === "dark";
-  
-  const headerBg = isDark ? "#252525" : "#FFFFFF";
-  const borderColor = primaryColor;
-  const buttonBg = isDark ? "#3D3D3D" : "#F0F0F0";
-
-  return (
-    <div 
-      className="xl:hidden fixed top-0 left-0 right-0 z-40 px-4 py-3 flex items-center justify-between border-b-2"
-      style={{ backgroundColor: headerBg, borderColor }}
-    >
-      {/* Left side: Utilities only */}
-      <motion.button
-        onClick={onUtilitiesClick}
-        className="flex items-center gap-2 px-3 py-2 text-white rounded-xl border-2"
-        style={{ backgroundColor: primaryColor, borderColor }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <Clock className="w-4 h-4" />
-        <Music className="w-4 h-4" />
-      </motion.button>
-
-      {/* Right side: Theme toggle */}
-      <motion.button
-        onClick={toggleTheme}
-        className="w-10 h-10 rounded-full border-2 flex items-center justify-center"
-        style={{ backgroundColor: buttonBg, borderColor }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        {isDark ? (
-          <span className="text-lg">☀️</span>
-        ) : (
-          <span className="text-lg">🌙</span>
-        )}
-      </motion.button>
-    </div>
-  );
-}
 
 // Schedule Dashboard
 function ScheduleDashboard() {
@@ -113,8 +33,17 @@ function ScheduleDashboard() {
   const isDark = theme === "dark";
   const { subjects } = useSubjects();
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
-  const { schedule, loading, addScheduleItem, removeScheduleItem } = useSchedule();
-  const [showAddModal, setShowAddModal] = useState(false);
+  const { schedule, loading, addScheduleItem, editScheduleItem, removeScheduleItem } = useSchedule();
+
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    mode: 'add' | 'edit';
+    initialData: any | null;
+  }>({
+    isOpen: false,
+    mode: 'add',
+    initialData: null,
+  });
 
   const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
@@ -124,6 +53,30 @@ function ScheduleDashboard() {
 
   // Filter schedule by selected day
   const daySchedule = schedule.filter(item => item.dayOfWeek === selectedDay);
+
+  const handleOpenAdd = () => {
+    setModalState({
+      isOpen: true,
+      mode: 'add',
+      initialData: null,
+    });
+  };
+
+  const handleOpenEdit = (item: any) => {
+    setModalState({
+      isOpen: true,
+      mode: 'edit',
+      initialData: item,
+    });
+  };
+
+  const handleSave = async (data: any) => {
+    if (modalState.mode === 'add') {
+      await addScheduleItem(data);
+    } else if (modalState.mode === 'edit' && modalState.initialData) {
+      await editScheduleItem(modalState.initialData.id, data);
+    }
+  };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: pageBg }}>
@@ -170,11 +123,11 @@ function ScheduleDashboard() {
             </div>
 
             {/* Schedule List */}
-            <FolderCard 
+            <FolderCard
               title={`วัน${dayLabels[selectedDay]}`}
               headerAction={
                 <motion.button
-                  onClick={() => setShowAddModal(true)}
+                  onClick={handleOpenAdd}
                   className="flex items-center gap-1 px-3 py-1 rounded-lg font-kanit text-sm text-white"
                   style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
                   whileHover={{ scale: 1.05 }}
@@ -211,13 +164,13 @@ function ScheduleDashboard() {
                       </div>
 
                       {/* Divider */}
-                      <div 
+                      <div
                         className="w-1 h-12 rounded-full"
                         style={{ backgroundColor: primaryColor }}
                       />
 
                       {/* Subject Info */}
-                      <div className="flex-1">
+                      <div className="flex-1 cursor-pointer" onClick={() => handleOpenEdit(item)}>
                         <p className="font-kanit font-medium" style={{ color: textColor }}>
                           {item.subjectName}
                         </p>
@@ -233,16 +186,30 @@ function ScheduleDashboard() {
                         )}
                       </div>
 
-                      {/* Delete */}
-                      <motion.button
-                        onClick={() => removeScheduleItem(item.id)}
-                        className="p-2 rounded-lg opacity-50 hover:opacity-100 transition-opacity"
-                        style={{ color: textMuted }}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </motion.button>
+                      {/* Edit (Implicit via click on body) but also explicit button */}
+                      <div className="flex gap-1">
+                        {/* Edit */}
+                        <motion.button
+                          onClick={() => handleOpenEdit(item)}
+                          className="p-2 rounded-lg opacity-50 hover:opacity-100 transition-opacity"
+                          style={{ color: textMuted }}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </motion.button>
+
+                        {/* Delete */}
+                        <motion.button
+                          onClick={() => removeScheduleItem(item.id)}
+                          className="p-2 rounded-lg opacity-50 hover:opacity-100 transition-opacity"
+                          style={{ color: textMuted }}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </motion.button>
+                      </div>
                     </motion.div>
                   ))}
                 </div>
@@ -257,7 +224,7 @@ function ScheduleDashboard() {
 
               {/* Add button */}
               <motion.button
-                onClick={() => setShowAddModal(true)}
+                onClick={handleOpenAdd}
                 className="w-full mt-4 p-3 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed transition-colors"
                 style={{ borderColor: primaryColor, color: primaryColor }}
                 whileHover={{ backgroundColor: hoverBg }}
@@ -270,29 +237,34 @@ function ScheduleDashboard() {
         </div>
       </div>
 
-      {/* Add Schedule Modal */}
-      <AddScheduleModal 
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onAdd={addScheduleItem}
-        subjects={subjects}
-        selectedDay={selectedDay}
-      />
+      {/* Schedule Form Modal */}
+      {modalState.isOpen && (
+        <ScheduleFormModal
+          isOpen={modalState.isOpen}
+          onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
+          onSave={handleSave}
+          subjects={subjects}
+          selectedDay={selectedDay}
+          initialData={modalState.initialData}
+          key={modalState.initialData?.id || 'new'}
+        />
+      )}
     </div>
   );
 }
 
-// Add Schedule Modal
-function AddScheduleModal({ 
-  isOpen, 
-  onClose, 
-  onAdd,
+// Schedule Form Modal (Add/Edit)
+function ScheduleFormModal({
+  isOpen,
+  onClose,
+  onSave,
   subjects,
-  selectedDay
-}: { 
+  selectedDay,
+  initialData,
+}: {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (data: {
+  onSave: (data: {
     subjectId: string;
     subjectName: string;
     dayOfWeek: number;
@@ -303,16 +275,25 @@ function AddScheduleModal({
   }) => Promise<void>;
   subjects: Array<{ id: string; name: string }>;
   selectedDay: number;
+  initialData?: {
+    id: string;
+    subjectId: string;
+    subjectName: string;
+    startTime: string;
+    endTime: string;
+    room?: string;
+    teacher?: string;
+  } | null;
 }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  
-  const [subjectId, setSubjectId] = useState("");
-  const [customSubject, setCustomSubject] = useState("");
-  const [startTime, setStartTime] = useState("08:00");
-  const [endTime, setEndTime] = useState("09:00");
-  const [room, setRoom] = useState("");
-  const [teacher, setTeacher] = useState("");
+
+  const [subjectId, setSubjectId] = useState(initialData?.subjectId || "");
+  const [customSubject, setCustomSubject] = useState(initialData?.subjectName || "");
+  const [startTime, setStartTime] = useState(initialData?.startTime || "08:00");
+  const [endTime, setEndTime] = useState(initialData?.endTime || "09:00");
+  const [room, setRoom] = useState(initialData?.room || "");
+  const [teacher, setTeacher] = useState(initialData?.teacher || "");
   const [saving, setSaving] = useState(false);
 
   const backdropBg = isDark ? "rgba(0,0,0,0.7)" : "rgba(0,0,0,0.5)";
@@ -322,18 +303,52 @@ function AddScheduleModal({
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
   const inputBg = isDark ? "#3D3D3D" : "#F5F5F5";
 
+  const { addSubject } = useSubjects();
+
+  // Reset form when modal opens with new data
+  // But since we are likely destroying the modal on close, initial state might be enough.
+  // However, if we reuse the modal, we need an effect.
+  // Assuming the parent handles mounting/unmounting or we just use key.
+
   const handleSubmit = async () => {
-    const subjectName = subjectId 
-      ? subjects.find(s => s.id === subjectId)?.name || customSubject
-      : customSubject;
-    
-    if (!subjectName.trim() || !startTime || !endTime) return;
-    
+    let finalSubjectId = subjectId;
+    let finalSubjectName = "";
+
+    if (subjectId) {
+      finalSubjectName = subjects.find((s) => s.id === subjectId)?.name || "";
+    } else if (customSubject.trim()) {
+      // Create new subject automatically
+      try {
+        finalSubjectName = customSubject.trim();
+        // Only create if it doesn't exist (though ID check handles selection)
+        // If editing and name changed to a new custom one, create it.
+        if (!initialData || finalSubjectName !== initialData.subjectName) {
+          finalSubjectId = await addSubject({
+            name: finalSubjectName,
+            icon: "book", // Default icon
+            color: "yellow", // Default color
+            order: subjects.length,
+          });
+        } else {
+          // Keeps existing ID if name matches (edge case if they typed exact name of existing custom subject)
+          // But simpler to just use what we have.
+          finalSubjectId = initialData?.subjectId || "";
+        }
+      } catch (err) {
+        console.error("Failed to create subject:", err);
+        return; // Stop if creation fails
+      }
+    } else {
+      return; // No subject selected or typed
+    }
+
+    if (!startTime || !endTime) return;
+
     setSaving(true);
     try {
-      await onAdd({
-        subjectId: subjectId || "",
-        subjectName: subjectName.trim(),
+      await onSave({
+        subjectId: finalSubjectId,
+        subjectName: finalSubjectName,
         dayOfWeek: selectedDay,
         startTime,
         endTime,
@@ -341,20 +356,15 @@ function AddScheduleModal({
         teacher: teacher.trim() || undefined,
       });
 
-      // Reset form
-      setSubjectId("");
-      setCustomSubject("");
-      setStartTime("08:00");
-      setEndTime("09:00");
-      setRoom("");
-      setTeacher("");
       onClose();
     } catch (error) {
-      console.error("Failed to add schedule:", error);
+      console.error("Failed to save schedule:", error);
     } finally {
       setSaving(false);
     }
   };
+
+  const isEdit = !!initialData;
 
   return (
     <AnimatePresence>
@@ -385,7 +395,7 @@ function AddScheduleModal({
             </button>
 
             <h3 className="font-felipa text-2xl mb-4" style={{ color: primaryColor }}>
-              เพิ่มคาบเรียน - วัน{dayLabels[selectedDay]}
+              {isEdit ? "แก้ไขคาบเรียน" : "เพิ่มคาบเรียน"} - วัน{dayLabels[selectedDay]}
             </h3>
 
             <div className="space-y-4">
@@ -498,7 +508,7 @@ function AddScheduleModal({
                 ) : (
                   <>
                     <Plus className="w-5 h-5" />
-                    เพิ่มคาบเรียน
+                    {isEdit ? "บันทึกการแก้ไข" : "เพิ่มคาบเรียน"}
                   </>
                 )}
               </motion.button>
@@ -530,16 +540,16 @@ export default function SchedulePage() {
   return (
     <>
       <TutorialOverlay />
-      
-      <MobileUtilities 
-        isOpen={showMobileUtilities} 
-        onClose={() => setShowMobileUtilities(false)} 
+
+      <MobileUtilities
+        isOpen={showMobileUtilities}
+        onClose={() => setShowMobileUtilities(false)}
       />
 
-      <MobileHeader 
+      <MobileHeader
         onUtilitiesClick={() => setShowMobileUtilities(true)}
       />
-      
+
       <div className="pt-16 xl:pt-0">
         <ScheduleDashboard />
       </div>

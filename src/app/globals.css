@@ -29,6 +29,12 @@
   --accent-blue: #4ECDC4;
   --accent-yellow: #FFE66D;
 
+  /* Primary Brand Colors (Design Tokens) */
+  --primary: #00568C;
+  --primary-light: #C5E8FF;
+  --primary-dark: #003D66;
+  --primary-hover: #006BA8;
+
   /* ================================================
      RESPONSIVE SPACING SYSTEM
      ================================================ */

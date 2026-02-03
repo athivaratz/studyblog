@@ -30,14 +30,15 @@ interface NavItem {
   href: string;
   color: string;
   darkColor: string;
+  id?: string;
 }
 
 const primaryColor = "#00568C";
 
 const navItems: NavItem[] = [
   { icon: <CheckSquare className="w-5 h-5" />, label: "To-Do", href: "/", color: "#C5E8FF", darkColor: "#1A3A4D" },
-  { icon: <Calendar className="w-5 h-5" />, label: "ตารางเรียน", href: "/schedule", color: "#C5E8FF", darkColor: "#1A3A4D" },
-  { icon: <Brain className="w-5 h-5" />, label: "ทบทวน", href: "/review", color: "#C5E8FF", darkColor: "#1A3A4D" },
+  { icon: <Calendar className="w-5 h-5" />, label: "ตารางเรียน", href: "/schedule", color: "#C5E8FF", darkColor: "#1A3A4D", id: "tour-nav-schedule" },
+  { icon: <Brain className="w-5 h-5" />, label: "ทบทวน", href: "/review", color: "#C5E8FF", darkColor: "#1A3A4D", id: "tour-nav-review" },
 ];
 
 // Profile Button (Click to go to Settings)
@@ -45,7 +46,7 @@ function ProfileButton({ compact = false }: { compact?: boolean }) {
   const { user, userProfile } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  
+
   const borderColor = primaryColor;
   const shadowColor = isDark ? "#404040" : primaryColor;
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
@@ -57,6 +58,7 @@ function ProfileButton({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/settings">
       <motion.div
+        id="tour-profile"
         className="flex items-center gap-2 cursor-pointer"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
@@ -70,9 +72,9 @@ function ProfileButton({ compact = false }: { compact?: boolean }) {
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div 
+          <div
             className={compact ? "w-8 h-8 rounded-full flex items-center justify-center" : "w-10 h-10 rounded-full flex items-center justify-center"}
-            style={{ 
+            style={{
               border: `2px solid ${borderColor}`,
               backgroundColor: avatarBg,
               boxShadow: `2px 2px 0px ${shadowColor}`,
@@ -81,7 +83,7 @@ function ProfileButton({ compact = false }: { compact?: boolean }) {
             <User className="w-4 h-4 text-white" />
           </div>
         )}
-        
+
         {!compact && (
           <div className="hidden md:block">
             <p className="font-kanit text-sm font-medium leading-tight" style={{ color: textColor }}>
@@ -101,11 +103,11 @@ export function Navbar() {
   const { theme } = useTheme();
   const pathname = usePathname();
   const isDark = theme === "dark";
-  
+
   // Check if we're on the home page - if not, use compact mode
   const isHomePage = pathname === "/";
   const isCompact = !isHomePage;
-  
+
   // Theme-aware colors
   const navBg = isDark ? "#252525" : "#FFFFFF";
   const borderColor = primaryColor;
@@ -146,7 +148,7 @@ export function Navbar() {
           </Link>
 
           {/* Page Title */}
-          <h1 
+          <h1
             className="font-felipa text-lg xl:text-2xl"
             style={{ color: textColor }}
           >
@@ -194,13 +196,13 @@ export function Navbar() {
             <span className="text-lg xl:text-2xl">📂</span>
           </motion.div>
           <div>
-            <h1 
+            <h1
               className="font-felipa text-lg xl:text-2xl leading-tight"
               style={{ color: textColor }}
             >
               studyblog
             </h1>
-            <p 
+            <p
               className="font-kanit hidden sm:block text-[10px] xl:text-xs"
               style={{ color: textMuted }}
             >
@@ -218,21 +220,21 @@ export function Navbar() {
           {navItems.map((item, index) => (
             <motion.div
               key={item.href}
-              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
+              id={(item as any).id}
             >
               <Link href={item.href}>
                 <motion.div
                   className="flex items-center gap-2 px-4 py-2 rounded-xl font-kanit text-sm font-medium transition-colors cursor-pointer"
-                  style={{ 
+                  style={{
                     backgroundColor: isDark ? item.darkColor : item.color,
                     border: `2px solid ${borderColor}`,
                     boxShadow: `2px 2px 0px ${shadowColor}`,
                     color: textColor,
                   }}
-                  whileHover={{ 
-                    scale: 1.05, 
+                  whileHover={{
+                    scale: 1.05,
                     boxShadow: `4px 4px 0px ${shadowColor}`
                   }}
                   whileTap={{ scale: 0.95 }}
@@ -258,7 +260,7 @@ export function Navbar() {
         BOTTOM NAVIGATION - MOBILE + TABLET ONLY (< 1280px)
         ================================================
       */}
-      <div 
+      <div
         className="xl:hidden flex items-center justify-around mt-2 pt-2"
         style={{ borderTop: `2px dashed ${isDark ? '#505050' : 'rgba(0,0,0,0.2)'}` }}
       >
@@ -271,7 +273,7 @@ export function Navbar() {
             >
               <div
                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center"
-                style={{ 
+                style={{
                   backgroundColor: isDark ? item.darkColor : item.color,
                   border: `2px solid ${borderColor}`,
                   boxShadow: `2px 2px 0px ${shadowColor}`,
@@ -280,7 +282,7 @@ export function Navbar() {
               >
                 {item.icon}
               </div>
-              <span 
+              <span
                 className="font-kanit text-[10px] sm:text-[11px]"
                 style={{ color: isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)' }}
               >

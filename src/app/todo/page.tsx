@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { Navbar } from "@/components/layout";
+import { Navbar, MobileHeader, LoadingScreen } from "@/components/layout";
 import { FolderCard } from "@/components/ui";
 import { ClockTimerWidget, IPodPlayer, MobileUtilities } from "@/components/widgets";
 import { TutorialOverlay } from "@/components/tutorial";
@@ -10,11 +10,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useTodos, useSubjects, useInitializeUser } from "@/hooks/useFirebaseData";
-import { 
+import {
   Loader2,
   Plus,
-  Clock,
-  Music,
   ChevronDown,
   Check,
   Trash2,
@@ -24,11 +22,8 @@ import {
   Circle,
   X,
   CheckSquare,
-  GraduationCap,
-  Filter,
-  Settings
+  Filter
 } from "lucide-react";
-import Link from "next/link";
 
 // Primary color
 const primaryColor = "#00568C";
@@ -41,95 +36,19 @@ const categoryLabels = {
   other: "อื่นๆ",
 };
 
-// Loading Screen
-function LoadingScreen() {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-  const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
-  const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
-  const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
-  
-  return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: pageBg }}>
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center gap-4"
-      >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 rounded-2xl flex items-center justify-center"
-          style={{ backgroundColor: cardBg, border: `3px solid ${primaryColor}` }}
-        >
-          <GraduationCap className="w-8 h-8" style={{ color: primaryColor }} />
-        </motion.div>
-        <p className="font-kanit" style={{ color: textMuted }}>กำลังโหลด...</p>
-      </motion.div>
-    </div>
-  );
-}
-
-// Mobile Header - Updated layout
-function MobileHeader({ 
-  onUtilitiesClick
-}: { 
-  onUtilitiesClick: () => void;
-}) {
-  const { theme, toggleTheme } = useTheme();
-  const isDark = theme === "dark";
-  
-  const headerBg = isDark ? "#252525" : "#FFFFFF";
-  const borderColor = primaryColor;
-  const buttonBg = isDark ? "#3D3D3D" : "#F0F0F0";
-
-  return (
-    <div 
-      className="xl:hidden fixed top-0 left-0 right-0 z-40 px-4 py-3 flex items-center justify-between border-b-2"
-      style={{ backgroundColor: headerBg, borderColor }}
-    >
-      {/* Left side: Utilities only */}
-      <motion.button
-        onClick={onUtilitiesClick}
-        className="flex items-center gap-2 px-3 py-2 text-white rounded-xl border-2"
-        style={{ backgroundColor: primaryColor, borderColor }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <Clock className="w-4 h-4" />
-        <Music className="w-4 h-4" />
-      </motion.button>
-
-      {/* Right side: Theme toggle */}
-      <motion.button
-        onClick={toggleTheme}
-        className="w-10 h-10 rounded-full border-2 flex items-center justify-center"
-        style={{ backgroundColor: buttonBg, borderColor }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        {isDark ? (
-          <span className="text-lg">☀️</span>
-        ) : (
-          <span className="text-lg">🌙</span>
-        )}
-      </motion.button>
-    </div>
-  );
-}
 
 // Todo List Full Page
 function TodoFullPage() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const { subjects } = useSubjects();
-  const { 
-    todos, 
-    pendingTodos, 
-    loading, 
-    addTodo, 
-    toggleTodo, 
-    removeTodo 
+  const {
+    todos,
+    pendingTodos,
+    loading,
+    addTodo,
+    toggleTodo,
+    removeTodo
   } = useTodos();
 
   const [filter, setFilter] = useState<"all" | "homework" | "personal" | "other">("all");
@@ -148,8 +67,8 @@ function TodoFullPage() {
   const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
 
   // Filter todos
-  const filteredTodos = filter === "all" 
-    ? todos 
+  const filteredTodos = filter === "all"
+    ? todos
     : todos.filter(t => t.category === filter);
 
   const pendingFiltered = filteredTodos.filter(t => !t.completed);
@@ -161,11 +80,11 @@ function TodoFullPage() {
     const now = new Date();
     const diff = date.getTime() - now.getTime();
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-    
+
     if (days < 0) return { text: "เลยกำหนด", urgent: true };
     if (days === 0) return { text: "วันนี้", urgent: true };
     if (days === 1) return { text: "พรุ่งนี้", urgent: false };
-    
+
     const d = date.getDate();
     const m = date.getMonth() + 1;
     const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
@@ -174,7 +93,7 @@ function TodoFullPage() {
 
   const categoryColors = {
     homework: isDark ? "#00568C" : "#C5E8FF",
-    personal: isDark ? "#2A4D2A" : "#D4F5D4", 
+    personal: isDark ? "#2A4D2A" : "#D4F5D4",
     other: isDark ? "#4D3A2A" : "#FFE4C9",
   };
 
@@ -236,7 +155,7 @@ function TodoFullPage() {
                   {pendingFiltered.map((todo, index) => {
                     const dueInfo = formatDueDate(todo.dueDate);
                     const catColor = categoryColors[todo.category];
-                    
+
                     return (
                       <motion.div
                         key={todo.id}
@@ -261,14 +180,14 @@ function TodoFullPage() {
                             {todo.text}
                           </p>
                           <div className="flex flex-wrap items-center gap-2 mt-1">
-                            <span 
+                            <span
                               className="font-kanit text-[10px] px-2 py-0.5 rounded-full"
                               style={{ backgroundColor: catColor, color: textColor }}
                             >
                               {todo.subjectName || categoryLabels[todo.category]}
                             </span>
                             {dueInfo && (
-                              <span 
+                              <span
                                 className="font-kanit text-[10px] flex items-center gap-1"
                                 style={{ color: dueInfo.urgent ? "#FF6B6B" : textMuted }}
                               >
@@ -315,7 +234,7 @@ function TodoFullPage() {
 
             {/* Completed Section */}
             {completedFiltered.length > 0 && (
-              <FolderCard 
+              <FolderCard
                 title="เสร็จสิ้นแล้ว"
                 headerAction={
                   <motion.button
@@ -383,7 +302,7 @@ function TodoFullPage() {
       </div>
 
       {/* Add Todo Modal */}
-      <AddTodoModal 
+      <AddTodoModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdd={addTodo}
@@ -394,12 +313,12 @@ function TodoFullPage() {
 }
 
 // Add Todo Modal
-function AddTodoModal({ 
-  isOpen, 
-  onClose, 
+function AddTodoModal({
+  isOpen,
+  onClose,
   onAdd,
-  subjects 
-}: { 
+  subjects
+}: {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (data: {
@@ -413,7 +332,7 @@ function AddTodoModal({
 }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  
+
   const [text, setText] = useState("");
   const [category, setCategory] = useState<"homework" | "personal" | "other">("homework");
   const [subjectId, setSubjectId] = useState("");
@@ -430,7 +349,7 @@ function AddTodoModal({
 
   const handleSubmit = async () => {
     if (!text.trim()) return;
-    
+
     setSaving(true);
     try {
       let parsedDueDate: Date | undefined;
@@ -467,7 +386,7 @@ function AddTodoModal({
 
   const categoryColors = {
     homework: isDark ? "#00568C" : "#C5E8FF",
-    personal: isDark ? "#2A4D2A" : "#D4F5D4", 
+    personal: isDark ? "#2A4D2A" : "#D4F5D4",
     other: isDark ? "#4D3A2A" : "#FFE4C9",
   };
 
@@ -526,7 +445,7 @@ function AddTodoModal({
                   {(["homework", "personal", "other"] as const).map((cat) => {
                     const isActive = category === cat;
                     const catColor = categoryColors[cat];
-                    
+
                     return (
                       <button
                         key={cat}
@@ -645,16 +564,16 @@ export default function TodoPage() {
   return (
     <>
       <TutorialOverlay />
-      
-      <MobileUtilities 
-        isOpen={showMobileUtilities} 
-        onClose={() => setShowMobileUtilities(false)} 
+
+      <MobileUtilities
+        isOpen={showMobileUtilities}
+        onClose={() => setShowMobileUtilities(false)}
       />
 
-      <MobileHeader 
+      <MobileHeader
         onUtilitiesClick={() => setShowMobileUtilities(true)}
       />
-      
+
       <div className="pt-16 xl:pt-0">
         <TodoFullPage />
       </div>

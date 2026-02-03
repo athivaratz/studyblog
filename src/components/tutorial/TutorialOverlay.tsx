@@ -1,281 +1,395 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserSettings, updateUserSettings } from "@/lib/firebaseServices";
-import { PaperCard, RetroButton } from "@/components/ui";
-import { 
-  GraduationCap, 
-  BookOpen, 
-  Calendar, 
-  Music, 
-  Timer,
-  CheckCircle,
+import { RetroButton } from "@/components/ui";
+import {
   ArrowRight,
   ArrowLeft,
+  CheckCircle,
+  X,
   Sparkles,
-  X
+  MapPin
 } from "lucide-react";
+
+// ==========================================
+// Types & Configuration
+// ==========================================
 
 interface TutorialStep {
   id: string;
+  targetId?: string;
+  targetIds?: string[]; // Array of IDs to check (useful for responsive layouts)
   title: string;
   description: string;
-  icon: React.ReactNode;
-  color: string;
-  tip?: string;
+  position?: "top" | "bottom" | "left" | "right" | "center";
 }
 
 const tutorialSteps: TutorialStep[] = [
   {
     id: "welcome",
     title: "ยินดีต้อนรับสู่ studyblog! 🎉",
-    description: "แอปผู้ช่วยจัดการการเรียนสไตล์ Y2K ที่จะทำให้การเรียนของคุณเป็นเรื่องสนุก",
-    icon: <GraduationCap className="w-12 h-12" />,
-    color: "yellow",
+    description: "แอปพลิเคชันจัดการเรียนการสอนสไตล์ Y2K ที่จะช่วยให้ชีวิตการเรียนของคุณง่ายและสนุกยิ่งขึ้น!",
+    position: "center"
   },
   {
-    id: "folders",
-    title: "แฟ้มวิชาเรียน 📁",
-    description: "จัดการวิชาเรียนด้วยระบบแฟ้มสีสันสดใส คลิกที่แท็บด้านบนเพื่อเปลี่ยนหมวดหมู่",
-    icon: <BookOpen className="w-12 h-12" />,
-    color: "pink",
-    tip: "กดที่แฟ้มวิชาเพื่อดูรายละเอียดและการบ้าน",
+    id: "stats",
+    targetId: "tour-stats",
+    title: "ภาพรวมของคุณ 📊",
+    description: "ส่วนนี้แสดงจำนวนการบ้านที่ค้างอยู่, งานเร่งด่วน, และงานที่เลยกำหนดส่ง ช่วยให้คุณติดตามสถานะได้ทันที",
+    position: "bottom"
   },
   {
-    id: "schedule",
+    id: "todo",
+    targetId: "tour-todo",
+    title: "To-Do List ✅",
+    description: "จัดการสิ่งที่ต้องทำได้ที่นี่ สามารถกรองตามหมวดหมู่ (การบ้าน/ส่วนตัว) และกดติ๊กถูกเพื่อทำเครื่องหมายว่าเสร็จสิ้น",
+    position: "top"
+  },
+  {
+    id: "utils",
+    targetIds: ["tour-utils-desktop", "tour-utils-mobile"],
+    title: "เครื่องมือช่วยเรียน 🛠️",
+    description: "ใช้งาน Widget นาฬิกาจับเวลา (Pomodoro) และเครื่องเล่นเพลง Lo-fi เพื่อเพิ่มสมาธิในการอ่านหนังสือ",
+    position: "bottom"
+  },
+  {
+    id: "nav-schedule",
+    targetId: "tour-nav-schedule",
     title: "ตารางเรียน 📅",
-    description: "ดูตารางเรียนรายวัน และกำหนดส่งการบ้านที่กำลังจะถึง",
-    icon: <Calendar className="w-12 h-12" />,
-    color: "blue",
-    tip: "Sync กับ Google Calendar ได้ในอนาคต!",
+    description: "ดูตารางเรียนรายวันของคุณได้ที่หน้านี้ อย่าลืมตรวจสอบห้องเรียนและเวลาเรียนนะ!",
+    position: "top"
   },
   {
-    id: "timer",
-    title: "นาฬิกาจับเวลา ⏱️",
-    description: "กดที่นาฬิกาด้านซ้ายเพื่อสลับเป็นโหมดจับเวลา Pomodoro",
-    icon: <Timer className="w-12 h-12" />,
-    color: "green",
-    tip: "ใช้เทคนิค Pomodoro 25 นาที พัก 5 นาที",
+    id: "nav-review",
+    targetId: "tour-nav-review",
+    title: "ห้องทบทวน 🧠",
+    description: "ฝึกฝนความจำด้วย Flashcards และมินิเกมสนุกๆ ที่ช่วยให้จำศัพท์และเนื้อหาได้แม่นยำขึ้น",
+    position: "top"
   },
   {
-    id: "music",
-    title: "เพลงประกอบการเรียน 🎵",
-    description: "เปิดเพลง Lo-fi ช่วยให้สมาธิดีขึ้นขณะทำการบ้าน",
-    icon: <Music className="w-12 h-12" />,
-    color: "purple",
+    id: "profile",
+    targetId: "tour-profile",
+    title: "ตั้งค่าโปรไฟล์ ⚙️",
+    description: "ปรับแต่งธีม (Dark Mode), การแจ้งเตือน, และข้อมูลส่วนตัวได้ที่เมนูตั้งค่า",
+    position: "bottom"
   },
   {
     id: "ready",
-    title: "พร้อมแล้ว! ✨",
-    description: "เริ่มต้นการเดินทางแห่งการเรียนรู้ของคุณได้เลย!",
-    icon: <Sparkles className="w-12 h-12" />,
-    color: "yellow",
-  },
+    title: "พร้อมลุยแล้ว! 🚀",
+    description: "ขอให้สนุกกับการเรียนรู้ไปกับ studyblog! เริ่มต้นใช้งานได้เลย",
+    position: "center"
+  }
 ];
+
+// ==========================================
+// Tutorial Overlay Component
+// ==========================================
 
 export function TutorialOverlay() {
   const { user } = useAuth();
   const [showTutorial, setShowTutorial] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [rect, setRect] = useState<DOMRect | null>(null);
 
+  const [filteredSteps, setFilteredSteps] = useState<TutorialStep[]>([]);
+
+  // Custom hook for window resize
+  const useWindowSize = () => {
+    const [size, setSize] = useState([0, 0]);
+    useEffect(() => {
+      const updateSize = () => setSize([window.innerWidth, window.innerHeight]);
+      window.addEventListener("resize", updateSize);
+      updateSize();
+      return () => window.removeEventListener("resize", updateSize);
+    }, []);
+    return size;
+  };
+  useWindowSize(); // Trigger re-render on resize
+
+  // Check initial status
   useEffect(() => {
-    const checkTutorialStatus = async () => {
+    const checkStatus = async () => {
       if (!user) return;
-      
       try {
         const settings = await getUserSettings(user.uid);
         if (settings && !settings.tutorialCompleted) {
           setShowTutorial(true);
         }
       } catch (error) {
-        console.error("Error checking tutorial status:", error);
-      } finally {
-        setLoading(false);
+        console.error("Tutorial check failed:", error);
       }
     };
-
-    checkTutorialStatus();
+    checkStatus();
   }, [user]);
 
+  // Filter steps on load based on available DOM elements
+  useEffect(() => {
+    if (!showTutorial) return;
+
+    // Wait for DOM
+    const timer = setTimeout(() => {
+      const available = tutorialSteps.filter(step => {
+        // Always include centered steps (no targets)
+        if (!step.targetId && (!step.targetIds || step.targetIds.length === 0)) {
+          return true;
+        }
+
+        // Check if any target exists
+        const ids = step.targetIds || (step.targetId ? [step.targetId] : []);
+        return ids.some(id => document.getElementById(id));
+      });
+
+      setFilteredSteps(available);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [showTutorial]);
+
+  // Update rect when step changes
+  useEffect(() => {
+    if (!showTutorial || filteredSteps.length === 0) return;
+
+    const step = filteredSteps[currentStep];
+    if (!step) return; // Guard
+
+    const idsToCheck = step.targetIds || (step.targetId ? [step.targetId] : []);
+
+    if (idsToCheck.length > 0) {
+      const timer = setTimeout(() => {
+        let foundRect: DOMRect | null = null;
+        let foundEl: HTMLElement | null = null;
+
+        for (const id of idsToCheck) {
+          const el = document.getElementById(id);
+          if (el) {
+            const r = el.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) {
+              foundRect = r;
+              foundEl = el;
+              break;
+            }
+          }
+        }
+
+        if (foundRect && foundEl) {
+          setRect(foundRect);
+          foundEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        } else {
+          setRect(null);
+        }
+      }, 100); // Shorter delay since we already filtered
+      return () => clearTimeout(timer);
+    } else {
+      setRect(null);
+    }
+  }, [currentStep, showTutorial, filteredSteps]);
+
   const handleNext = () => {
-    if (currentStep < tutorialSteps.length - 1) {
-      setCurrentStep(currentStep + 1);
+    if (currentStep < filteredSteps.length - 1) {
+      setCurrentStep(prev => prev + 1);
+    } else {
+      handleComplete();
     }
   };
 
   const handlePrev = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
+      setCurrentStep(prev => prev - 1);
     }
   };
 
   const handleComplete = async () => {
-    if (!user) return;
-    
-    try {
+    if (user) {
       await updateUserSettings(user.uid, { tutorialCompleted: true });
-      setShowTutorial(false);
-    } catch (error) {
-      console.error("Error completing tutorial:", error);
-      setShowTutorial(false);
     }
+    setShowTutorial(false);
+    setTimeout(() => setCurrentStep(0), 500);
   };
 
   const handleSkip = async () => {
     await handleComplete();
   };
 
-  if (loading || !showTutorial) return null;
+  if (!showTutorial || filteredSteps.length === 0) return null;
 
-  const step = tutorialSteps[currentStep];
-  const isLastStep = currentStep === tutorialSteps.length - 1;
+  const step = filteredSteps[currentStep];
+  const isLastStep = currentStep === filteredSteps.length - 1;
+  const isCentered = !rect || (!step.targetId && !step.targetIds);
 
-  const bgColors: Record<string, string> = {
-    yellow: "bg-[#FFF3B0]",
-    pink: "bg-[#FFD6E0]",
-    blue: "bg-[#C5E8FF]",
-    green: "bg-[#D4F5D4]",
-    purple: "bg-[#E8D5F2]",
+  // Calculate Tooltip Position
+  const getTooltipStyle = () => {
+    if (isCentered) {
+      return {
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        position: "fixed" as const,
+        zIndex: 100, // Higher than spotlight
+        maxWidth: "400px",
+        width: "90%"
+      };
+    }
+
+    // Position relative to rect
+    // Default margin
+    const gap = 20;
+    const tooltipWidth = 320; // Approx width
+
+    let style: any = { position: "fixed", zIndex: 100, width: tooltipWidth };
+
+    // Simple logic: prefer step.position
+    if (step.position === "top") {
+      style.top = rect!.top - gap;
+      style.left = rect!.left + (rect!.width / 2);
+      style.transform = "translate(-50%, -100%)";
+    } else if (step.position === "bottom") {
+      style.top = rect!.bottom + gap;
+      style.left = rect!.left + (rect!.width / 2);
+      style.transform = "translate(-50%, 0)";
+    } else if (step.position === "left") {
+      style.top = rect!.top + (rect!.height / 2);
+      style.left = rect!.left - gap;
+      style.transform = "translate(-100%, -50%)";
+    } else if (step.position === "right") {
+      style.top = rect!.top + (rect!.height / 2);
+      style.left = rect!.right + gap;
+      style.transform = "translate(0, -50%)";
+    }
+
+    return style;
   };
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      >
-        {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          onClick={handleSkip}
-        />
+      <div className="fixed inset-0 z-[90] pointer-events-auto">
+        {/* 
+          SPOTLIGHT EFFECT 
+          Uses a simple transparent div with a massive box-shadow to dim everything else.
+          This is the most robust CSS-only way to do a "hole".
+        */}
+        {!isCentered && rect && (
+          <motion.div
+            layoutId="spotlight"
+            className="absolute rounded-xl pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity: 1,
+              top: rect.top - 5, // -5 padding
+              left: rect.left - 5,
+              width: rect.width + 10,
+              height: rect.height + 10,
+              boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.75)"
+            }}
+            transition={{ type: "spring", stiffness: 200, damping: 30 }}
+            style={{ border: "2px solid rgba(255, 255, 255, 0.3)" }}
+          />
+        )}
 
-        {/* Tutorial Card */}
+        {/* Dark backdrop only for centered steps */}
+        {isCentered && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+          />
+        )}
+
+        {/* TOOLTIP CARD */}
         <motion.div
           key={step.id}
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          initial={{ opacity: 0, scale: 0.9, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: -20 }}
-          transition={{ type: "spring", damping: 20 }}
-          className="relative w-full max-w-md z-10"
+          exit={{ opacity: 0, scale: 0.9, y: -10 }}
+          transition={{ duration: 0.3 }}
+          style={getTooltipStyle()}
+          className="bg-[#1e1e1e] text-white p-6 rounded-2xl shadow-2xl border border-white/10"
         >
-          <PaperCard color="white" className="p-6 relative overflow-hidden">
-            {/* Skip button */}
+          {/* Header */}
+          <div className="flex items-start justify-between mb-2">
+            <h3 className="font-felipa text-2xl text-[#FFD6E0]">
+              {step.title}
+            </h3>
             <button
               onClick={handleSkip}
-              className="absolute top-4 right-4 p-2 hover:bg-black/5 rounded-full transition-colors"
+              className="text-white/40 hover:text-white transition-colors"
             >
-              <X className="w-5 h-5 text-black/40" />
+              <X className="w-5 h-5" />
             </button>
+          </div>
 
-            {/* Icon */}
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
-              transition={{ delay: 0.2 }}
-              className={`
-                w-24 h-24 mx-auto mb-6 rounded-2xl
-                ${bgColors[step.color]}
-                border-3 border-black shadow-hard
-                flex items-center justify-center
-              `}
-            >
-              {step.icon}
-            </motion.div>
+          {/* Body */}
+          <p className="font-kanit text-white/80 text-sm leading-relaxed mb-6">
+            {step.description}
+          </p>
 
-            {/* Content */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-center space-y-3"
-            >
-              <h2 className="font-felipa text-3xl">{step.title}</h2>
-              <p className="font-kanit text-black/70">{step.description}</p>
-              
-              {step.tip && (
-                <div className="mt-4 p-3 bg-[#FFF8E7] border-2 border-dashed border-black/20 rounded-xl">
-                  <p className="font-kanit text-sm text-black/60">
-                    💡 {step.tip}
-                  </p>
-                </div>
-              )}
-            </motion.div>
-
-            {/* Progress dots */}
-            <div className="flex justify-center gap-2 my-6">
-              {tutorialSteps.map((_, index) => (
-                <motion.div
-                  key={index}
-                  className={`
-                    w-2 h-2 rounded-full border border-black
-                    ${index === currentStep ? "bg-[#FF6B6B]" : "bg-white"}
-                  `}
-                  animate={{
-                    scale: index === currentStep ? 1.2 : 1,
-                  }}
+          {/* Footer Controls */}
+          <div className="flex items-center justify-between">
+            {/* Step Counter */}
+            <div className="flex gap-1">
+              {filteredSteps.map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-2 h-2 rounded-full transition-colors ${i === currentStep ? "bg-[#4ECDC4]" : "bg-white/20"}`}
                 />
               ))}
             </div>
 
-            {/* Navigation */}
-            <div className="flex gap-3">
+            {/* Buttons */}
+            <div className="flex gap-2">
               {currentStep > 0 && (
-                <RetroButton
+                <button
                   onClick={handlePrev}
-                  color="white"
-                  className="flex-1"
+                  className="px-3 py-1.5 rounded-lg text-xs font-kanit text-white/60 hover:bg-white/10 transition-colors"
                 >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  ก่อนหน้า
-                </RetroButton>
+                  ย้อนกลับ
+                </button>
               )}
-              
-              <RetroButton
-                onClick={isLastStep ? handleComplete : handleNext}
-                color={isLastStep ? "green" : "yellow"}
-                className="flex-1"
-              >
-                {isLastStep ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    เริ่มใช้งาน
-                  </>
-                ) : (
-                  <>
-                    ถัดไป
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </>
-                )}
-              </RetroButton>
-            </div>
-          </PaperCard>
 
-          {/* Step counter */}
-          <p className="text-center mt-4 font-kanit text-sm text-white/60">
-            {currentStep + 1} / {tutorialSteps.length}
-          </p>
+              <button
+                onClick={handleNext}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-black font-kanit text-xs font-bold hover:bg-gray-200 transition-colors"
+              >
+                {isLastStep ? "เสร็จสิ้น" : "ถัดไป"}
+                {!isLastStep && <ArrowRight className="w-3 h-3" />}
+                {isLastStep && <CheckCircle className="w-3 h-3" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Arrow Tip for Top/Bottom (Visual flourish) */}
+          {!isCentered && (
+            <div className="absolute w-4 h-4 bg-[#1e1e1e] rotate-45 border-l border-t border-white/10"
+              style={{
+                // Simple positioning for arrow based on where the tooltip is relative to target
+                ...(step.position === "top" ? { bottom: "-8px", left: "50%", marginLeft: "-8px", borderTop: "0", borderLeft: "0", borderBottom: "1px solid rgba(255,255,255,0.1)", borderRight: "1px solid rgba(255,255,255,0.1)" } : {}),
+                ...(step.position === "bottom" ? { top: "-8px", left: "50%", marginLeft: "-8px" } : {}),
+                // Omitted specific arrow styles for left/right for simplicity, standard top/bottom covers most
+              }}
+            />
+          )}
+
         </motion.div>
-      </motion.div>
+      </div>
     </AnimatePresence>
   );
 }
 
-// Export a hook to manually trigger tutorial
+// Hook for manual triggering
 export function useTutorial() {
   const { user } = useAuth();
-  
+
   const resetTutorial = async () => {
     if (!user) return;
-    await updateUserSettings(user.uid, { tutorialCompleted: false });
-    window.location.reload();
+    try {
+      await updateUserSettings(user.uid, { tutorialCompleted: false });
+      window.location.reload();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return { resetTutorial };

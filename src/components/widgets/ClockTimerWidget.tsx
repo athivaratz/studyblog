@@ -8,21 +8,22 @@ import { useTheme } from "@/contexts";
 interface ClockTimerWidgetProps {
   size?: number;
   className?: string;
+  id?: string;
 }
 
 type Mode = "clock" | "pomodoro" | "stopwatch";
 
-export function ClockTimerWidget({ size = 150, className = "" }: ClockTimerWidgetProps) {
+export function ClockTimerWidget({ size = 150, className = "", id }: ClockTimerWidgetProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const [mode, setMode] = useState<Mode>("clock");
   const [time, setTime] = useState(new Date());
-  
+
   // Timer states
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(25 * 60);
   const [selectedPreset, setSelectedPreset] = useState(0);
-  
+
   // Stopwatch states
   const [stopwatchRunning, setStopwatchRunning] = useState(false);
   const [stopwatchSeconds, setStopwatchSeconds] = useState(0);
@@ -128,14 +129,14 @@ export function ClockTimerWidget({ size = 150, className = "" }: ClockTimerWidge
     }
   };
 
-  const timerProgress = mode === "pomodoro" 
+  const timerProgress = mode === "pomodoro"
     ? ((pomodoroPresets[selectedPreset].time - timerSeconds) / pomodoroPresets[selectedPreset].time) * 100
     : 0;
 
   return (
-    <div className={`flex flex-col items-center ${className}`}>
+    <div id={id} className={`flex flex-col items-center ${className}`}>
       {/* Mode Tabs */}
-      <div 
+      <div
         className="flex gap-1 p-1 rounded-xl mb-3"
         style={{ backgroundColor: isDark ? "#3D3D3D" : "#F0F0F0" }}
       >
@@ -176,8 +177,8 @@ export function ClockTimerWidget({ size = 150, className = "" }: ClockTimerWidge
                 height: size,
                 backgroundColor: bgColor,
                 borderColor: borderColor,
-                boxShadow: isDark 
-                  ? "inset 0 2px 10px rgba(0,0,0,0.5), 0 4px 20px rgba(0,86,140,0.3)" 
+                boxShadow: isDark
+                  ? "inset 0 2px 10px rgba(0,0,0,0.5), 0 4px 20px rgba(0,86,140,0.3)"
                   : "inset 0 2px 10px rgba(0,0,0,0.1), 0 4px 20px rgba(0,86,140,0.2)",
               }}
             >
@@ -186,7 +187,7 @@ export function ClockTimerWidget({ size = 150, className = "" }: ClockTimerWidge
                 const angle = (i * 30 - 90) * (Math.PI / 180);
                 const x = Math.cos(angle) * (size / 2 - 20) + size / 2;
                 const y = Math.sin(angle) * (size / 2 - 20) + size / 2;
-                
+
                 return (
                   <span
                     key={i}
@@ -321,7 +322,7 @@ export function ClockTimerWidget({ size = 150, className = "" }: ClockTimerWidge
               )}
 
               <div className="text-center z-10">
-                <p 
+                <p
                   className="font-mono text-3xl font-bold"
                   style={{ color: mode === "pomodoro" ? "#FF6B6B" : "#4ECDC4" }}
                 >
@@ -370,8 +371,8 @@ export function ClockTimerWidget({ size = 150, className = "" }: ClockTimerWidge
                 onClick={handlePlayPause}
                 className="w-12 h-12 rounded-full flex items-center justify-center"
                 style={{
-                  backgroundColor: (mode === "pomodoro" ? timerRunning : stopwatchRunning) 
-                    ? "#FFE066" 
+                  backgroundColor: (mode === "pomodoro" ? timerRunning : stopwatchRunning)
+                    ? "#FFE066"
                     : mode === "pomodoro" ? "#FF6B6B" : "#4ECDC4",
                   color: (mode === "pomodoro" ? timerRunning : stopwatchRunning) ? "#1A1A1A" : "#FFFFFF",
                 }}

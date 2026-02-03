@@ -8,4 +8,6 @@ export { ThemeToggle } from "./ThemeToggle";
 export { ProfileModal } from "./ProfileModal";
 export { NetworkWarningModal } from "./NetworkWarningModal";
 export { AddScheduleModal } from "./AddScheduleModal";
+export { ConfirmDialog } from "./ConfirmDialog";
+
 

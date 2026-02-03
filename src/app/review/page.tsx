@@ -2,8 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { Navbar } from "@/components/layout";
+import { Navbar, MobileHeader, LoadingScreen } from "@/components/layout";
 import { FolderCard } from "@/components/ui";
 import { ClockTimerWidget, IPodPlayer, MobileUtilities } from "@/components/widgets";
 import { TutorialOverlay } from "@/components/tutorial";
@@ -11,11 +10,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useFlashcards, useSubjects, useInitializeUser, useReviewSessions } from "@/hooks/useFirebaseData";
-import { 
+import {
   Loader2,
   Plus,
-  Clock,
-  Music,
   Brain,
   Zap,
   Target,
@@ -23,9 +20,7 @@ import {
   Check,
   RotateCcw,
   ChevronDown,
-  Trash2,
-  GraduationCap,
-  Settings
+  Trash2
 } from "lucide-react";
 
 // Primary color
@@ -54,7 +49,7 @@ interface GameState {
 function StatsCard({ value, label, icon: Icon }: { value: number | string; label: string; icon?: React.ComponentType<{ className?: string }> }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  
+
   const bgColor = isDark ? "#2D2D2D" : "#FFFFFF";
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const mutedColor = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
@@ -82,7 +77,7 @@ function ReviewDashboard() {
   const { subjects } = useSubjects();
   const { flashcards, dueForReview, loading, addFlashcard, removeFlashcard, reviewFlashcard } = useFlashcards();
   const { stats, addSession } = useReviewSessions();
-  
+
   const [gameState, setGameState] = useState<GameState>({
     mode: null,
     isPlaying: false,
@@ -94,7 +89,7 @@ function ReviewDashboard() {
     startTime: null,
     cards: [],
   });
-  
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>("all");
   const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
@@ -109,8 +104,8 @@ function ReviewDashboard() {
   const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
 
   // Filter flashcards by subject
-  const filteredFlashcards = selectedSubjectFilter === "all" 
-    ? flashcards 
+  const filteredFlashcards = selectedSubjectFilter === "all"
+    ? flashcards
     : flashcards.filter(f => f.subjectId === selectedSubjectFilter);
 
   const dueCards = selectedSubjectFilter === "all"
@@ -160,7 +155,7 @@ function ReviewDashboard() {
         subjectId: selectedSubjectFilter !== "all" ? selectedSubjectFilter : undefined,
       });
     }
-    
+
     setGameState({
       mode: null,
       isPlaying: false,
@@ -177,13 +172,13 @@ function ReviewDashboard() {
   // Answer handler
   const handleAnswer = async (correct: boolean) => {
     const currentCard = gameState.cards[gameState.currentQuestion];
-    
+
     // Update flashcard with SM-2 algorithm (quality: 0-5, 3=correct, 0=incorrect)
     await reviewFlashcard(currentCard.id, correct ? 4 : 1);
-    
+
     const newScore = correct ? gameState.score + (gameState.mode === "speed" ? 100 : 10) : gameState.score;
     const newCorrect = correct ? gameState.correctAnswers + 1 : gameState.correctAnswers;
-    
+
     setGameState(prev => ({
       ...prev,
       score: newScore,
@@ -208,7 +203,7 @@ function ReviewDashboard() {
   // If playing, show game screen
   if (gameState.isPlaying && gameState.mode) {
     return (
-      <GameScreen 
+      <GameScreen
         gameState={gameState}
         onAnswer={handleAnswer}
         onEnd={endGame}
@@ -219,7 +214,7 @@ function ReviewDashboard() {
   // Game over screen
   if (gameState.currentQuestion >= gameState.totalQuestions && gameState.totalQuestions > 0) {
     return (
-      <GameOverScreen 
+      <GameOverScreen
         gameState={gameState}
         onPlayAgain={() => startGame(gameState.mode!)}
         onExit={endGame}
@@ -258,7 +253,7 @@ function ReviewDashboard() {
   ];
 
   return (
-    <div 
+    <div
       className="min-h-screen"
       style={{ backgroundColor: pageBg }}
     >
@@ -315,7 +310,7 @@ function ReviewDashboard() {
                     whileTap={{ scale: filteredFlashcards.length >= 4 ? 0.98 : 1 }}
                   >
                     <div className="flex items-center gap-3 mb-2">
-                      <div 
+                      <div
                         className="w-12 h-12 rounded-xl flex items-center justify-center"
                         style={{ backgroundColor: mode.iconBg }}
                       >
@@ -335,7 +330,7 @@ function ReviewDashboard() {
             </FolderCard>
 
             {/* Flashcards Section */}
-            <FolderCard 
+            <FolderCard
               title="การ์ดของฉัน"
               headerAction={
                 <div className="flex items-center gap-2">
@@ -347,8 +342,8 @@ function ReviewDashboard() {
                       style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      {selectedSubjectFilter === "all" 
-                        ? "ทุกวิชา" 
+                      {selectedSubjectFilter === "all"
+                        ? "ทุกวิชา"
                         : subjects.find(s => s.id === selectedSubjectFilter)?.name || "ทุกวิชา"}
                       <ChevronDown className={`w-4 h-4 transition-transform ${showSubjectDropdown ? 'rotate-180' : ''}`} />
                     </motion.button>
@@ -368,7 +363,7 @@ function ReviewDashboard() {
                               setShowSubjectDropdown(false);
                             }}
                             className="w-full px-3 py-2 text-left font-kanit text-sm flex items-center gap-2 transition-colors"
-                            style={{ 
+                            style={{
                               color: textColor,
                               backgroundColor: selectedSubjectFilter === "all" ? hoverBg : "transparent"
                             }}
@@ -384,7 +379,7 @@ function ReviewDashboard() {
                                 setShowSubjectDropdown(false);
                               }}
                               className="w-full px-3 py-2 text-left font-kanit text-sm flex items-center gap-2 transition-colors"
-                              style={{ 
+                              style={{
                                 color: textColor,
                                 backgroundColor: selectedSubjectFilter === subject.id ? hoverBg : "transparent"
                               }}
@@ -435,7 +430,7 @@ function ReviewDashboard() {
                           {card.answer}
                         </p>
                       </div>
-                      
+
                       <motion.button
                         onClick={() => removeFlashcard(card.id)}
                         className="p-1.5 rounded-lg opacity-50 hover:opacity-100 transition-opacity"
@@ -473,7 +468,7 @@ function ReviewDashboard() {
       </div>
 
       {/* Add Flashcard Modal */}
-      <AddFlashcardModal 
+      <AddFlashcardModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onAdd={async (data) => {
@@ -490,11 +485,11 @@ function ReviewDashboard() {
 }
 
 // Game Screen Component
-function GameScreen({ 
-  gameState, 
-  onAnswer, 
-  onEnd 
-}: { 
+function GameScreen({
+  gameState,
+  onAnswer,
+  onEnd
+}: {
   gameState: GameState;
   onAnswer: (correct: boolean) => void;
   onEnd: () => void;
@@ -512,7 +507,7 @@ function GameScreen({
   const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
 
   const currentCard = gameState.cards[gameState.currentQuestion];
-  const isGameOver = gameState.currentQuestion >= gameState.totalQuestions || 
+  const isGameOver = gameState.currentQuestion >= gameState.totalQuestions ||
     (gameState.mode === "speed" && gameState.timeLeft <= 0);
 
   // Generate multiple choice options
@@ -524,7 +519,7 @@ function GameScreen({
         .sort(() => Math.random() - 0.5)
         .slice(0, 3)
         .map(c => c.back);
-      
+
       const allOptions = [correctAnswer, ...wrongAnswers].sort(() => Math.random() - 0.5);
       setOptions(allOptions);
     }
@@ -547,7 +542,7 @@ function GameScreen({
     if (selectedOption !== null) return;
     setSelectedOption(index);
     const isCorrect = options[index] === currentCard.back;
-    
+
     setTimeout(() => {
       onAnswer(isCorrect);
       setSelectedOption(null);
@@ -556,21 +551,21 @@ function GameScreen({
 
   if (isGameOver) {
     return (
-      <GameOverScreen 
+      <GameOverScreen
         gameState={gameState}
-        onPlayAgain={() => {}}
+        onPlayAgain={() => { }}
         onExit={onEnd}
       />
     );
   }
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex flex-col"
       style={{ backgroundColor: pageBg }}
     >
       {/* Header */}
-      <div 
+      <div
         className="flex items-center justify-between p-4 border-b-2"
         style={{ borderColor }}
       >
@@ -584,7 +579,7 @@ function GameScreen({
             </span>
           )}
         </div>
-        
+
         <div className="flex items-center gap-4">
           <span className="font-kanit font-bold" style={{ color: primaryColor }}>
             🏆 {gameState.score}
@@ -634,10 +629,10 @@ function GameScreen({
                       <motion.button
                         onClick={() => handleSelfGrade(false)}
                         className="px-6 py-3 rounded-xl border-2 font-kanit"
-                        style={{ 
+                        style={{
                           backgroundColor: isDark ? "#5C3A3A" : "#FFD6E0",
                           borderColor,
-                          color: textColor 
+                          color: textColor
                         }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -648,10 +643,10 @@ function GameScreen({
                       <motion.button
                         onClick={() => handleSelfGrade(true)}
                         className="px-6 py-3 rounded-xl border-2 font-kanit"
-                        style={{ 
+                        style={{
                           backgroundColor: isDark ? "#354D35" : "#D4F5D4",
                           borderColor,
-                          color: textColor 
+                          color: textColor
                         }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -668,7 +663,7 @@ function GameScreen({
         ) : (
           // Memory/Speed mode - Multiple choice
           <div className="w-full max-w-md space-y-6">
-            <div 
+            <div
               className="rounded-2xl border-2 p-6 text-center"
               style={{ backgroundColor: cardBg, borderColor }}
             >
@@ -681,13 +676,13 @@ function GameScreen({
               {options.map((option, index) => {
                 const isCorrect = option === currentCard.back;
                 const isSelected = selectedOption === index;
-                
+
                 let bgColor = cardBg;
                 if (selectedOption !== null) {
                   if (isCorrect) bgColor = isDark ? "#354D35" : "#D4F5D4";
                   else if (isSelected) bgColor = isDark ? "#5C3A3A" : "#FFD6E0";
                 }
-                
+
                 return (
                   <motion.button
                     key={index}
@@ -722,19 +717,19 @@ function GameOverScreen({
 }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  
+
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
   const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
   const borderColor = primaryColor;
   const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
-  
-  const accuracy = gameState.totalQuestions > 0 
-    ? Math.round((gameState.correctAnswers / gameState.totalQuestions) * 100) 
+
+  const accuracy = gameState.totalQuestions > 0
+    ? Math.round((gameState.correctAnswers / gameState.totalQuestions) * 100)
     : 0;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backgroundColor: pageBg }}
     >
@@ -752,24 +747,24 @@ function GameOverScreen({
         >
           {accuracy >= 80 ? "🏆" : accuracy >= 50 ? "⭐" : "💪"}
         </motion.div>
-        
+
         <h2 className="font-felipa text-3xl mb-2" style={{ color: primaryColor }}>
           จบเกม!
         </h2>
-        
+
         <p className="font-kanit text-lg mb-6" style={{ color: textMuted }}>
           คะแนน: <span className="font-bold" style={{ color: primaryColor }}>{gameState.score}</span>
         </p>
-        
+
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div 
+          <div
             className="p-4 rounded-xl border-2"
             style={{ borderColor }}
           >
             <p className="font-felipa text-2xl" style={{ color: primaryColor }}>{gameState.correctAnswers}</p>
             <p className="font-kanit text-xs" style={{ color: textMuted }}>ตอบถูก</p>
           </div>
-          <div 
+          <div
             className="p-4 rounded-xl border-2"
             style={{ borderColor }}
           >
@@ -777,7 +772,7 @@ function GameOverScreen({
             <p className="font-kanit text-xs" style={{ color: textMuted }}>ความแม่นยำ</p>
           </div>
         </div>
-        
+
         <div className="flex gap-3">
           <motion.button
             onClick={onExit}
@@ -791,10 +786,10 @@ function GameOverScreen({
           <motion.button
             onClick={onPlayAgain}
             className="flex-1 py-3 rounded-xl border-2 font-kanit flex items-center justify-center gap-2"
-            style={{ 
+            style={{
               backgroundColor: primaryColor,
-              borderColor, 
-              color: "#FFFFFF" 
+              borderColor,
+              color: "#FFFFFF"
             }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -809,12 +804,12 @@ function GameOverScreen({
 }
 
 // Add Flashcard Modal
-function AddFlashcardModal({ 
-  isOpen, 
-  onClose, 
+function AddFlashcardModal({
+  isOpen,
+  onClose,
   onAdd,
-  subjects 
-}: { 
+  subjects
+}: {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (data: {
@@ -827,7 +822,7 @@ function AddFlashcardModal({
 }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  
+
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
   const [subjectId, setSubjectId] = useState("");
@@ -842,11 +837,11 @@ function AddFlashcardModal({
 
   const handleSubmit = async () => {
     if (!front.trim() || !back.trim()) return;
-    
+
     setSaving(true);
     try {
       const selectedSubject = subjects.find(s => s.id === subjectId);
-      
+
       await onAdd({
         front: front.trim(),
         back: back.trim(),
@@ -975,90 +970,6 @@ function AddFlashcardModal({
   );
 }
 
-// Loading Screen
-function LoadingScreen() {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-  const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
-  const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
-  const borderColor = primaryColor;
-  const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
-  
-  return (
-    <div 
-      className="min-h-screen flex items-center justify-center"
-      style={{ backgroundColor: pageBg }}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center gap-4"
-      >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 rounded-2xl flex items-center justify-center"
-          style={{ 
-            backgroundColor: cardBg, 
-            border: `3px solid ${borderColor}`,
-          }}
-        >
-          <GraduationCap className="w-8 h-8" style={{ color: primaryColor }} />
-        </motion.div>
-        <p className="font-kanit" style={{ color: textMuted }}>กำลังโหลด...</p>
-      </motion.div>
-    </div>
-  );
-}
-
-// Mobile Header - Updated layout
-function MobileHeader({ 
-  onUtilitiesClick
-}: { 
-  onUtilitiesClick: () => void;
-}) {
-  const { theme, toggleTheme } = useTheme();
-  const isDark = theme === "dark";
-  
-  const headerBg = isDark ? "#252525" : "#FFFFFF";
-  const borderColor = primaryColor;
-  const buttonBg = isDark ? "#3D3D3D" : "#F0F0F0";
-
-  return (
-    <div 
-      className="xl:hidden fixed top-0 left-0 right-0 z-40 px-4 py-3 flex items-center justify-between border-b-2"
-      style={{ backgroundColor: headerBg, borderColor }}
-    >
-      {/* Left side: Utilities only */}
-      <motion.button
-        onClick={onUtilitiesClick}
-        className="flex items-center gap-2 px-3 py-2 text-white rounded-xl border-2"
-        style={{ backgroundColor: primaryColor, borderColor }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <Clock className="w-4 h-4" />
-        <Music className="w-4 h-4" />
-      </motion.button>
-
-      {/* Right side: Theme toggle */}
-      <motion.button
-        onClick={toggleTheme}
-        className="w-10 h-10 rounded-full border-2 flex items-center justify-center"
-        style={{ backgroundColor: buttonBg, borderColor }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        {isDark ? (
-          <span className="text-lg">☀️</span>
-        ) : (
-          <span className="text-lg">🌙</span>
-        )}
-      </motion.button>
-    </div>
-  );
-}
-
 export default function ReviewPage() {
   const { user, loading: authLoading } = useAuth();
   const { loading: initLoading } = useInitializeUser();
@@ -1079,16 +990,16 @@ export default function ReviewPage() {
   return (
     <>
       <TutorialOverlay />
-      
-      <MobileUtilities 
-        isOpen={showMobileUtilities} 
-        onClose={() => setShowMobileUtilities(false)} 
+
+      <MobileUtilities
+        isOpen={showMobileUtilities}
+        onClose={() => setShowMobileUtilities(false)}
       />
 
-      <MobileHeader 
+      <MobileHeader
         onUtilitiesClick={() => setShowMobileUtilities(true)}
       />
-      
+
       <div className="pt-16 xl:pt-0">
         <ReviewDashboard />
       </div>

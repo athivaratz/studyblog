@@ -45,5 +45,5 @@ keystore/
 prompt.txt
 docs/
 
-firestore.rules
+firebaserules/
 firestore.indexes.json
