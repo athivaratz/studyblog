@@ -1,6 +1,6 @@
 {
-  "name": "studyblog-app",
-  "version": "0.2.0",
+  "name": "studyblog",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,18 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@capacitor-firebase/authentication": "^8.0.1",
-    "@capacitor/android": "^8.0.0",
-    "@capacitor/cli": "^8.0.0",
-    "@capacitor/core": "^8.0.0",
     "@google/generative-ai": "^0.24.1",
     "firebase": "^12.7.0",
     "framer-motion": "^12.23.26",
-    "i": "^0.3.7",
-    "lightningcss-linux-x64-gnu": "^1.31.1",
     "lucide-react": "^0.562.0",
     "next": "^16.1.6",
-    "npm": "^11.8.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },

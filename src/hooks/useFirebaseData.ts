@@ -11,6 +11,12 @@ import {
   Flashcard,
   ReviewSession,
   QuizQuestion,
+  Tag,
+  Note,
+  StudyGoal,
+  StudySession,
+  DailyStats,
+  SharedQuiz,
   getHomework,
   getTodos,
   getSchedule,
@@ -20,28 +26,49 @@ import {
   getFlashcards,
   getReviewSessions,
   getQuizQuestions,
+  getTags,
+  getNotes,
+  getStudyGoals,
+  getStudySessions,
+  getDailyStats,
+  getSharedQuizByCode,
   createHomework,
   createTodo,
   createScheduleItem,
   createFlashcard,
   createQuizQuestion,
   createQuizQuestionsBatch,
+  createTag,
+  createNote,
+  createStudyGoal,
+  createStudySession,
+  createSharedQuiz,
   saveReviewSession,
   updateHomework,
   updateTodo,
   updateScheduleItem,
   updateFlashcardAfterReview,
   updateQuizQuestionStats,
+  updateTag,
+  updateNote,
+  updateStudyGoal,
+  updateStudySession,
+  updateDailyStats,
   deleteHomework,
   deleteTodo,
   deleteScheduleItem,
   deleteFlashcard,
   deleteQuizQuestion,
   deleteQuizQuestionsBySubject,
+  deleteTag,
+  deleteNote,
+  deleteStudyGoal,
+  deleteSharedQuiz,
   completeHomework,
   updateUserStats,
   updateUserSettings,
   initializeNewUser,
+  calculateStudyStreak,
 } from "@/lib/firebaseServices";
 
 // =====================
@@ -607,5 +634,362 @@ export function useQuizQuestions(subjectId?: string) {
     removeQuestion,
     removeQuestionsBySubject,
     refetch: fetchQuestions,
+  };
+}
+
+// =====================
+// useTags Hook
+// =====================
+
+export function useTags() {
+  const { user } = useAuth();
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchTags = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const data = await getTags(user.uid);
+      setTags(data);
+      setError(null);
+    } catch (err) {
+      setError("ไม่สามารถโหลดแท็กได้");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchTags();
+  }, [fetchTags]);
+
+  const addTag = async (data: { name: string; color: string }) => {
+    if (!user) return;
+    await createTag(user.uid, data);
+    await fetchTags();
+  };
+
+  const editTag = async (id: string, data: Partial<Tag>) => {
+    await updateTag(id, data);
+    await fetchTags();
+  };
+
+  const removeTag = async (id: string) => {
+    await deleteTag(id);
+    await fetchTags();
+  };
+
+  return {
+    tags,
+    loading,
+    error,
+    addTag,
+    editTag,
+    removeTag,
+    refetch: fetchTags,
+  };
+}
+
+// =====================
+// useNotes Hook
+// =====================
+
+export function useNotes(subjectId?: string) {
+  const { user } = useAuth();
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchNotes = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const data = await getNotes(user.uid, subjectId);
+      setNotes(data);
+      setError(null);
+    } catch (err) {
+      setError("ไม่สามารถโหลดบันทึกได้");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, subjectId]);
+
+  useEffect(() => {
+    fetchNotes();
+  }, [fetchNotes]);
+
+  const addNote = async (data: { title: string; content: string; subjectId: string }) => {
+    if (!user) return;
+    await createNote(user.uid, data);
+    await fetchNotes();
+  };
+
+  const editNote = async (id: string, data: Partial<Note>) => {
+    await updateNote(id, data);
+    await fetchNotes();
+  };
+
+  const removeNote = async (id: string) => {
+    await deleteNote(id);
+    await fetchNotes();
+  };
+
+  return {
+    notes,
+    loading,
+    error,
+    addNote,
+    editNote,
+    removeNote,
+    refetch: fetchNotes,
+  };
+}
+
+// =====================
+// useStudyGoals Hook
+// =====================
+
+export function useStudyGoals() {
+  const { user } = useAuth();
+  const [goals, setGoals] = useState<StudyGoal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchGoals = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const data = await getStudyGoals(user.uid);
+      setGoals(data);
+      setError(null);
+    } catch (err) {
+      setError("ไม่สามารถโหลดเป้าหมายได้");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchGoals();
+  }, [fetchGoals]);
+
+  const addGoal = async (
+    data: Omit<StudyGoal, "id" | "userId" | "createdAt" | "currentValue" | "completed">
+  ) => {
+    if (!user) return;
+    await createStudyGoal(user.uid, data);
+    await fetchGoals();
+  };
+
+  const updateGoal = async (id: string, data: Partial<StudyGoal>) => {
+    await updateStudyGoal(id, data);
+    await fetchGoals();
+  };
+
+  const removeGoal = async (id: string) => {
+    await deleteStudyGoal(id);
+    await fetchGoals();
+  };
+
+  // Stats
+  const activeGoals = goals.filter((g) => !g.completed);
+  const completedGoals = goals.filter((g) => g.completed);
+
+  return {
+    goals,
+    activeGoals,
+    completedGoals,
+    loading,
+    error,
+    addGoal,
+    updateGoal,
+    removeGoal,
+    refetch: fetchGoals,
+  };
+}
+
+// =====================
+// useStudySessions Hook
+// =====================
+
+export function useStudySessions(days: number = 7) {
+  const { user } = useAuth();
+  const [sessions, setSessions] = useState<StudySession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSessions = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - days);
+      const data = await getStudySessions(user.uid, fromDate);
+      setSessions(data);
+      setError(null);
+    } catch (err) {
+      setError("ไม่สามารถโหลดเซสชันการเรียนได้");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, days]);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
+
+  const addSession = async (
+    data: Omit<StudySession, "id" | "userId" | "startedAt">
+  ) => {
+    if (!user) return;
+    await createStudySession(user.uid, data);
+    await fetchSessions();
+  };
+
+  const editSession = async (id: string, data: Partial<StudySession>) => {
+    await updateStudySession(id, data);
+    await fetchSessions();
+  };
+
+  // Calculate total study time
+  const totalMinutes = sessions.reduce((sum, s) => sum + s.durationMinutes, 0);
+  const totalHours = Math.round(totalMinutes / 6) / 10; // Round to 1 decimal
+
+  return {
+    sessions,
+    loading,
+    error,
+    addSession,
+    editSession,
+    totalMinutes,
+    totalHours,
+    refetch: fetchSessions,
+  };
+}
+
+// =====================
+// useDailyStats Hook
+// =====================
+
+export function useDailyStats(days: number = 7) {
+  const { user } = useAuth();
+  const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
+  const [streak, setStreak] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDailyStats = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const data = await getDailyStats(user.uid, days);
+      setDailyStats(data);
+      
+      // Calculate streak
+      const currentStreak = await calculateStudyStreak(user.uid);
+      setStreak(currentStreak);
+      
+      setError(null);
+    } catch (err) {
+      setError("ไม่สามารถโหลดสถิติรายวันได้");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, days]);
+
+  useEffect(() => {
+    fetchDailyStats();
+  }, [fetchDailyStats]);
+
+  const updateStats = async (date: string, data: Partial<DailyStats>) => {
+    if (!user) return;
+    await updateDailyStats(user.uid, date, data);
+    await fetchDailyStats();
+  };
+
+  return {
+    dailyStats,
+    streak,
+    loading,
+    error,
+    updateStats,
+    refetch: fetchDailyStats,
+  };
+}
+
+// =====================
+// useSharedQuiz Hook
+// =====================
+
+export function useSharedQuiz() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const shareQuiz = async (
+    userName: string,
+    quizBankId: string,
+    title: string,
+    questionCount: number,
+    expiresInDays?: number
+  ): Promise<SharedQuiz | null> => {
+    if (!user) return null;
+    setLoading(true);
+    setError(null);
+    try {
+      const sharedQuiz = await createSharedQuiz(
+        user.uid,
+        userName,
+        quizBankId,
+        title,
+        questionCount,
+        expiresInDays
+      );
+      return sharedQuiz;
+    } catch (err) {
+      setError("ไม่สามารถแชร์แบบทดสอบได้");
+      console.error(err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const importQuiz = async (shareCode: string): Promise<SharedQuiz | null> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const quiz = await getSharedQuizByCode(shareCode);
+      if (!quiz) {
+        setError("ไม่พบแบบทดสอบ หรือรหัสหมดอายุแล้ว");
+        return null;
+      }
+      return quiz;
+    } catch (err) {
+      setError("ไม่สามารถนำเข้าแบบทดสอบได้");
+      console.error(err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeSharedQuiz = async (id: string) => {
+    await deleteSharedQuiz(id);
+  };
+
+  return {
+    loading,
+    error,
+    shareQuiz,
+    importQuiz,
+    removeSharedQuiz,
   };
 }

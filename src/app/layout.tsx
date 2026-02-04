@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Felipa, Kanit } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -18,17 +18,22 @@ const kanit = Kanit({
 });
 
 export const metadata: Metadata = {
-  title: "studyblog",
-  description: "จัดการการเรียนของคุณอย่างมีสไตล์",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "studyblog",
+  title: "studyblog - จัดการการเรียนอย่างมีสไตล์",
+  description: "แอปจัดการการเรียนสไตล์ Y2K สำหรับนักเรียนไทย - ติดตามการบ้าน ตารางเรียน และทบทวนบทเรียน",
+  keywords: ["การเรียน", "นักเรียน", "การบ้าน", "ตารางเรียน", "Y2K", "studyblog"],
+  authors: [{ name: "studyblog" }],
+  openGraph: {
+    title: "studyblog - จัดการการเรียนอย่างมีสไตล์",
+    description: "แอปจัดการการเรียนสไตล์ Y2K สำหรับนักเรียนไทย",
+    type: "website",
+    locale: "th_TH",
   },
-  formatDetection: {
-    telephone: false,
-  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#00568C",
 };
 
 export default function RootLayout({
@@ -38,20 +43,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th">
-      <head>
-        {/* PWA Meta Tags for iOS */}
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="studyblog" />
-        <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
-        
-        {/* PWA Splash Screens for iOS */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash/splash-640x1136.png"
-          media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)"
-        />
-      </head>
       <body
         className={`${felipa.variable} ${kanit.variable} antialiased font-kanit`}
       >

@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export',
+  // Removed 'output: export' - using server-side rendering for auth support
   images: {
     unoptimized: true,
   },

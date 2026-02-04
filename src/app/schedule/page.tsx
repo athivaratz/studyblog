@@ -267,7 +267,7 @@ function ScheduleFormModal({
   onClose: () => void;
   onSave: (data: {
     subjectId: string;
-    subjectName: string;
+    subjectName?: string;
     dayOfWeek: number;
     startTime: string;
     endTime: string;
@@ -279,7 +279,7 @@ function ScheduleFormModal({
   initialData?: {
     id: string;
     subjectId: string;
-    subjectName: string;
+    subjectName?: string;
     startTime: string;
     endTime: string;
     room?: string;

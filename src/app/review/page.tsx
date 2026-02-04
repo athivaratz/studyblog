@@ -9,7 +9,7 @@ import { TutorialOverlay } from "@/components/tutorial";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
-import { useFlashcards, useSubjects, useInitializeUser, useReviewSessions, useQuizQuestions } from "@/hooks/useFirebaseData";
+import { useFlashcards, useSubjects, useInitializeUser, useReviewSessions, useQuizQuestions, useSharedQuiz } from "@/hooks/useFirebaseData";
 import {
   Loader2,
   Plus,
@@ -23,7 +23,12 @@ import {
   Trash2,
   Sparkles,
   FileSpreadsheet,
-  BookOpen
+  BookOpen,
+  Share2,
+  Copy,
+  Link,
+  Users,
+  QrCode
 } from "lucide-react";
 
 // Primary color
@@ -72,14 +77,265 @@ function StatsCard({ value, label }: { value: number | string; label: string }) 
   );
 }
 
+// Share Quiz Modal Component
+function ShareQuizModal({
+  isOpen,
+  onClose,
+  flashcardCount,
+  quizQuestionCount,
+  onShare,
+  loading,
+  shareResult,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  flashcardCount: number;
+  quizQuestionCount: number;
+  onShare: (title: string, expiryDays: number) => void;
+  loading: boolean;
+  shareResult: { shareCode: string; shareUrl: string } | null;
+}) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const [title, setTitle] = useState("");
+  const [expiryDays, setExpiryDays] = useState(7);
+  const [copied, setCopied] = useState<"code" | "url" | null>(null);
+
+  const modalBg = isDark ? "#2D2D2D" : "#FFFFFF";
+  const inputBg = isDark ? "#3D3D3D" : "#F5F5F5";
+  const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
+  const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
+
+  const totalQuestions = flashcardCount + quizQuestionCount;
+
+  const handleCopy = async (text: string, type: "code" | "url") => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(type);
+      setTimeout(() => setCopied(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        onClick={onClose}
+      >
+        <div className="absolute inset-0 bg-black/50" />
+
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          className="relative w-full max-w-md z-10 rounded-2xl border-2 p-6 max-h-[90vh] overflow-y-auto"
+          style={{ backgroundColor: modalBg, borderColor: primaryColor }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <Share2 className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="font-felipa text-2xl" style={{ color: textColor }}>
+                แชร์ข้อสอบ
+              </h3>
+            </div>
+            <button onClick={onClose}>
+              <X className="w-5 h-5" style={{ color: textMuted }} />
+            </button>
+          </div>
+
+          {!shareResult ? (
+            // Share Form
+            <div className="space-y-4">
+              {/* Summary */}
+              <div
+                className="p-4 rounded-xl"
+                style={{ backgroundColor: isDark ? "#3D3D3D" : "#F0F0F0" }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-4 h-4" style={{ color: primaryColor }} />
+                  <span className="font-kanit text-sm font-medium" style={{ color: textColor }}>
+                    ข้อมูลที่จะแชร์
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: modalBg }}>
+                    <p className="font-felipa text-xl" style={{ color: primaryColor }}>{flashcardCount}</p>
+                    <p className="font-kanit text-xs" style={{ color: textMuted }}>Flashcards</p>
+                  </div>
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: modalBg }}>
+                    <p className="font-felipa text-xl" style={{ color: primaryColor }}>{quizQuestionCount}</p>
+                    <p className="font-kanit text-xs" style={{ color: textMuted }}>คำถาม AI</p>
+                  </div>
+                </div>
+                <p className="font-kanit text-xs text-center mt-2" style={{ color: textMuted }}>
+                  รวม {totalQuestions} ข้อ
+                </p>
+              </div>
+
+              {/* Title Input */}
+              <div>
+                <label className="font-kanit text-sm mb-1 block" style={{ color: textMuted }}>
+                  ชื่อข้อสอบ
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="เช่น ข้อสอบคณิตศาสตร์ ม.6"
+                  className="w-full px-4 py-3 rounded-xl border-2 font-kanit focus:outline-none"
+                  style={{ backgroundColor: inputBg, borderColor: primaryColor, color: textColor }}
+                />
+              </div>
+
+              {/* Expiry Days */}
+              <div>
+                <label className="font-kanit text-sm mb-1 block" style={{ color: textMuted }}>
+                  หมดอายุใน
+                </label>
+                <select
+                  value={expiryDays}
+                  onChange={(e) => setExpiryDays(Number(e.target.value))}
+                  className="w-full px-4 py-3 rounded-xl border-2 font-kanit focus:outline-none"
+                  style={{ backgroundColor: inputBg, borderColor: primaryColor, color: textColor }}
+                >
+                  <option value={1}>1 วัน</option>
+                  <option value={3}>3 วัน</option>
+                  <option value={7}>7 วัน</option>
+                  <option value={14}>14 วัน</option>
+                  <option value={30}>30 วัน</option>
+                </select>
+              </div>
+
+              {/* Share Button */}
+              <motion.button
+                onClick={() => onShare(title || "ข้อสอบของฉัน", expiryDays)}
+                disabled={loading || totalQuestions === 0}
+                className="w-full py-3 rounded-xl font-kanit font-medium text-white flex items-center justify-center gap-2 disabled:opacity-50"
+                style={{ backgroundColor: primaryColor }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <Share2 className="w-5 h-5" />
+                    สร้างลิงก์แชร์
+                  </>
+                )}
+              </motion.button>
+            </div>
+          ) : (
+            // Share Result
+            <div className="space-y-4">
+              <div className="text-center mb-4">
+                <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: "#22C55E" }}>
+                  <Check className="w-8 h-8 text-white" />
+                </div>
+                <h4 className="font-kanit font-medium text-lg" style={{ color: textColor }}>
+                  สร้างลิงก์สำเร็จ!
+                </h4>
+                <p className="font-kanit text-sm" style={{ color: textMuted }}>
+                  แชร์รหัสหรือลิงก์ให้เพื่อนเพื่อทำข้อสอบ
+                </p>
+              </div>
+
+              {/* Share Code */}
+              <div>
+                <label className="font-kanit text-sm mb-1 block" style={{ color: textMuted }}>
+                  รหัสข้อสอบ
+                </label>
+                <div
+                  className="flex items-center gap-2 p-3 rounded-xl border-2"
+                  style={{ backgroundColor: inputBg, borderColor: primaryColor }}
+                >
+                  <QrCode className="w-5 h-5" style={{ color: primaryColor }} />
+                  <span className="flex-1 font-mono text-xl font-bold tracking-wider" style={{ color: textColor }}>
+                    {shareResult.shareCode}
+                  </span>
+                  <motion.button
+                    onClick={() => handleCopy(shareResult.shareCode, "code")}
+                    className="p-2 rounded-lg"
+                    style={{ backgroundColor: copied === "code" ? "#22C55E" : primaryColor }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {copied === "code" ? (
+                      <Check className="w-4 h-4 text-white" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-white" />
+                    )}
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Share Link */}
+              <div>
+                <label className="font-kanit text-sm mb-1 block" style={{ color: textMuted }}>
+                  ลิงก์แชร์
+                </label>
+                <div
+                  className="flex items-center gap-2 p-3 rounded-xl border-2"
+                  style={{ backgroundColor: inputBg, borderColor: primaryColor }}
+                >
+                  <Link className="w-5 h-5 flex-shrink-0" style={{ color: primaryColor }} />
+                  <span className="flex-1 font-kanit text-sm truncate" style={{ color: textColor }}>
+                    {shareResult.shareUrl}
+                  </span>
+                  <motion.button
+                    onClick={() => handleCopy(shareResult.shareUrl, "url")}
+                    className="p-2 rounded-lg flex-shrink-0"
+                    style={{ backgroundColor: copied === "url" ? "#22C55E" : primaryColor }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {copied === "url" ? (
+                      <Check className="w-4 h-4 text-white" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-white" />
+                    )}
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <motion.button
+                onClick={onClose}
+                className="w-full py-3 rounded-xl border-2 font-kanit font-medium"
+                style={{ borderColor: primaryColor, color: textColor }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                ปิด
+              </motion.button>
+            </div>
+          )}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 // Main Review Dashboard
 function ReviewDashboard() {
   const { theme } = useTheme();
+  const { userProfile } = useAuth();
   const isDark = theme === "dark";
   const { subjects } = useSubjects();
   const { flashcards, dueForReview, loading, addFlashcard, removeFlashcard, reviewFlashcard } = useFlashcards();
   const { stats, addSession } = useReviewSessions();
   const { questions: quizQuestions, addQuestions } = useQuizQuestions();
+  const { shareQuiz, loading: shareLoading } = useSharedQuiz();
 
   const [gameState, setGameState] = useState<GameState>({
     mode: null,
@@ -96,6 +352,8 @@ function ReviewDashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [showCSVImport, setShowCSVImport] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareResult, setShareResult] = useState<{ shareCode: string; shareUrl: string } | null>(null);
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>("all");
   const [showSubjectDropdown, setShowSubjectDropdown] = useState(false);
 
@@ -115,6 +373,25 @@ function ReviewDashboard() {
   const dueCards = selectedSubjectFilter === "all"
     ? dueForReview
     : dueForReview.filter(f => f.subjectId === selectedSubjectFilter);
+
+  // Handle share quiz
+  const handleShareQuiz = async (title: string, expiryDays: number) => {
+    const totalQuestions = flashcards.length + quizQuestions.length;
+    const result = await shareQuiz(
+      userProfile?.displayName || "ผู้ใช้",
+      "flashcards", // Using flashcards as the quiz bank
+      title,
+      totalQuestions,
+      expiryDays
+    );
+    if (result) {
+      const shareUrl = `${window.location.origin}/portal?code=${result.shareCode}`;
+      setShareResult({
+        shareCode: result.shareCode,
+        shareUrl,
+      });
+    }
+  };
 
   // Start a game
   const startGame = (mode: "quiz" | "memory" | "speed") => {
@@ -295,6 +572,38 @@ function ReviewDashboard() {
               <StatsCard value={stats?.totalSessions || 0} label="ครั้งที่เล่น" />
               <StatsCard value={`${stats?.accuracy || 0}%`} label="ความแม่นยำ" />
             </div>
+
+            {/* Share Quiz Button */}
+            {(flashcards.length > 0 || quizQuestions.length > 0) && (
+              <motion.button
+                onClick={() => {
+                  setShareResult(null);
+                  setShowShareModal(true);
+                }}
+                className="w-full p-4 rounded-2xl border-2 flex items-center justify-center gap-3"
+                style={{
+                  backgroundColor: isDark ? "#2A3A4D" : "#E8F4FF",
+                  borderColor: primaryColor,
+                }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  <Share2 className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="font-kanit font-bold" style={{ color: textColor }}>
+                    แชร์ข้อสอบให้เพื่อน
+                  </p>
+                  <p className="font-kanit text-xs" style={{ color: textMuted }}>
+                    สร้างลิงก์เพื่อให้เพื่อนทำข้อสอบของคุณ
+                  </p>
+                </div>
+              </motion.button>
+            )}
 
             {/* Game Modes */}
             <FolderCard title="เลือกโหมดเกม">
@@ -607,6 +916,20 @@ function ReviewDashboard() {
             source: q.source,
           })));
         }}
+      />
+
+      {/* Share Quiz Modal */}
+      <ShareQuizModal
+        isOpen={showShareModal}
+        onClose={() => {
+          setShowShareModal(false);
+          setShareResult(null);
+        }}
+        flashcardCount={flashcards.length}
+        quizQuestionCount={quizQuestions.length}
+        onShare={handleShareQuiz}
+        loading={shareLoading}
+        shareResult={shareResult}
       />
     </div>
   );

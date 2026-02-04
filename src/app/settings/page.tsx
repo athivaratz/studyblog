@@ -1,12 +1,13 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Navbar, MobileHeader, LoadingScreen } from "@/components/layout";
 import { FolderCard } from "@/components/ui";
 import { IPodPlayer, ClockTimerWidget, MobileUtilities } from "@/components/widgets";
 import { TutorialOverlay, useTutorial } from "@/components/tutorial/TutorialOverlay";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { LoginCard } from "@/components/auth";
 import { useUserSettings, useInitializeUser } from "@/hooks/useFirebaseData";
 import {
@@ -20,12 +21,266 @@ import {
   ChevronRight,
   Smartphone,
   HelpCircle,
-  Heart
+  Heart,
+  Palette,
+  X,
+  Check,
+  Sun,
 } from "lucide-react";
 import { useState } from "react";
 
 // Primary color
 const primaryColor = "#00568C";
+
+// Preset theme colors
+const presetThemes = [
+  { name: "Ocean Blue", primary: "#00568C", accent: "#0080C0" },
+  { name: "Forest Green", primary: "#16A34A", accent: "#22C55E" },
+  { name: "Sunset Orange", primary: "#EA580C", accent: "#F97316" },
+  { name: "Royal Purple", primary: "#7C3AED", accent: "#A855F7" },
+  { name: "Rose Pink", primary: "#DB2777", accent: "#EC4899" },
+  { name: "Midnight", primary: "#1E293B", accent: "#475569" },
+];
+
+// Custom Theme Modal
+function CustomThemeModal({
+  isOpen,
+  onClose,
+  currentSettings,
+  onSave,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  currentSettings: { primaryColor?: string; accentColor?: string } | null;
+  onSave: (colors: { primaryColor: string; accentColor: string }) => void;
+}) {
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
+  const [selectedPrimary, setSelectedPrimary] = useState(currentSettings?.primaryColor || "#00568C");
+  const [selectedAccent, setSelectedAccent] = useState(currentSettings?.accentColor || "#0080C0");
+  const [saving, setSaving] = useState(false);
+
+  const modalBg = isDark ? "#2D2D2D" : "#FFFFFF";
+  const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
+  const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
+  const inputBg = isDark ? "#3D3D3D" : "#F5F5F5";
+
+  if (!isOpen) return null;
+
+  const handleSave = async () => {
+    setSaving(true);
+    await onSave({ primaryColor: selectedPrimary, accentColor: selectedAccent });
+    setSaving(false);
+    onClose();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/50" />
+
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        className="relative w-full max-w-md z-10 rounded-2xl border-2 p-6 max-h-[90vh] overflow-y-auto"
+        style={{ backgroundColor: modalBg, borderColor: primaryColor }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-felipa text-2xl" style={{ color: textColor }}>
+            ปรับแต่งธีม
+          </h3>
+          <button onClick={onClose}>
+            <X className="w-5 h-5" style={{ color: textMuted }} />
+          </button>
+        </div>
+
+        {/* Theme Mode Toggle */}
+        <div className="mb-6">
+          <label className="font-kanit text-sm mb-2 block" style={{ color: textMuted }}>
+            โหมดธีม
+          </label>
+          <div className="flex gap-2">
+            <motion.button
+              onClick={() => setTheme("light")}
+              className="flex-1 p-3 rounded-xl border-2 flex items-center justify-center gap-2"
+              style={{
+                borderColor: !isDark ? primaryColor : "transparent",
+                backgroundColor: !isDark ? `${primaryColor}20` : inputBg,
+              }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Sun className="w-5 h-5" style={{ color: !isDark ? primaryColor : textMuted }} />
+              <span className="font-kanit text-sm" style={{ color: textColor }}>สว่าง</span>
+            </motion.button>
+            <motion.button
+              onClick={() => setTheme("dark")}
+              className="flex-1 p-3 rounded-xl border-2 flex items-center justify-center gap-2"
+              style={{
+                borderColor: isDark ? primaryColor : "transparent",
+                backgroundColor: isDark ? `${primaryColor}20` : inputBg,
+              }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Moon className="w-5 h-5" style={{ color: isDark ? primaryColor : textMuted }} />
+              <span className="font-kanit text-sm" style={{ color: textColor }}>มืด</span>
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Preset Themes */}
+        <div className="mb-6">
+          <label className="font-kanit text-sm mb-2 block" style={{ color: textMuted }}>
+            ธีมสำเร็จรูป
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {presetThemes.map((preset) => (
+              <motion.button
+                key={preset.name}
+                onClick={() => {
+                  setSelectedPrimary(preset.primary);
+                  setSelectedAccent(preset.accent);
+                }}
+                className="p-2 rounded-xl border-2 text-center relative"
+                style={{
+                  borderColor: selectedPrimary === preset.primary ? preset.primary : "transparent",
+                  backgroundColor: inputBg,
+                }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex justify-center gap-1 mb-1">
+                  <div
+                    className="w-6 h-6 rounded-full"
+                    style={{ backgroundColor: preset.primary }}
+                  />
+                  <div
+                    className="w-6 h-6 rounded-full"
+                    style={{ backgroundColor: preset.accent }}
+                  />
+                </div>
+                <span className="font-kanit text-xs" style={{ color: textColor }}>
+                  {preset.name}
+                </span>
+                {selectedPrimary === preset.primary && (
+                  <div
+                    className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: preset.primary }}
+                  >
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                )}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom Color Pickers */}
+        <div className="space-y-4 mb-6">
+          <div>
+            <label className="font-kanit text-sm mb-2 block" style={{ color: textMuted }}>
+              สีหลัก
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={selectedPrimary}
+                onChange={(e) => setSelectedPrimary(e.target.value)}
+                className="w-12 h-12 rounded-lg cursor-pointer border-0"
+              />
+              <input
+                type="text"
+                value={selectedPrimary}
+                onChange={(e) => setSelectedPrimary(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg border-2 font-mono uppercase"
+                style={{ backgroundColor: inputBg, borderColor: primaryColor, color: textColor }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="font-kanit text-sm mb-2 block" style={{ color: textMuted }}>
+              สีรอง
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={selectedAccent}
+                onChange={(e) => setSelectedAccent(e.target.value)}
+                className="w-12 h-12 rounded-lg cursor-pointer border-0"
+              />
+              <input
+                type="text"
+                value={selectedAccent}
+                onChange={(e) => setSelectedAccent(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-lg border-2 font-mono uppercase"
+                style={{ backgroundColor: inputBg, borderColor: primaryColor, color: textColor }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Preview */}
+        <div className="mb-6">
+          <label className="font-kanit text-sm mb-2 block" style={{ color: textMuted }}>
+            ตัวอย่าง
+          </label>
+          <div
+            className="p-4 rounded-xl border-2"
+            style={{ borderColor: selectedPrimary, backgroundColor: inputBg }}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: selectedPrimary }}
+              >
+                <Palette className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-kanit font-medium" style={{ color: textColor }}>
+                  ตัวอย่างธีม
+                </p>
+                <p className="font-kanit text-xs" style={{ color: textMuted }}>
+                  นี่คือลักษณะที่ธีมจะแสดง
+                </p>
+              </div>
+            </div>
+            <motion.button
+              className="w-full py-2 rounded-lg font-kanit text-sm text-white"
+              style={{ backgroundColor: selectedPrimary }}
+            >
+              ปุ่มตัวอย่าง
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Save Button */}
+        <motion.button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full py-3 rounded-xl font-kanit font-medium text-white flex items-center justify-center gap-2 disabled:opacity-50"
+          style={{ backgroundColor: selectedPrimary }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          {saving ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              <Check className="w-5 h-5" />
+              บันทึกธีม
+            </>
+          )}
+        </motion.button>
+      </motion.div>
+    </motion.div>
+  );
+}
 
 
 // Setting Item Component
@@ -234,10 +489,12 @@ function EditProfileModal({
 function SettingsDashboard() {
   const { user, userProfile, signOut } = useAuth();
   const { theme } = useTheme();
+  const { language, setLanguage } = useLanguage();
   const isDark = theme === "dark";
   const { settings, loading: settingsLoading, updateSettings } = useUserSettings();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showThemeModal, setShowThemeModal] = useState(false);
   const { resetTutorial } = useTutorial();
 
   const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
@@ -365,8 +622,9 @@ function SettingsDashboard() {
                   <SettingItem
                     icon={<Moon className="w-5 h-5" />}
                     label="ธีม"
-                    description="เลือกธีมสว่างหรือมืด"
+                    description="ปรับแต่งสีและธีมของแอป"
                     value={settings?.theme === "dark" ? "มืด" : "สว่าง"}
+                    onClick={() => setShowThemeModal(true)}
                   />
 
                   <SettingItem
@@ -440,6 +698,24 @@ function SettingsDashboard() {
         onClose={() => setShowEditProfile(false)}
         currentName={userProfile?.displayName || user?.displayName || ""}
         currentPhoto={user?.photoURL || ""}
+      />
+
+      {/* Custom Theme Modal */}
+      <CustomThemeModal
+        isOpen={showThemeModal}
+        onClose={() => setShowThemeModal(false)}
+        currentSettings={{
+          primaryColor: settings?.customColors?.primary || "#00568C",
+          accentColor: settings?.customColors?.accent || "#0080C0",
+        }}
+        onSave={async (colors) => {
+          await updateSettings({
+            customColors: {
+              primary: colors.primaryColor,
+              accent: colors.accentColor,
+            },
+          });
+        }}
       />
     </div>
   );

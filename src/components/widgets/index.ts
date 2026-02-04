@@ -9,3 +9,4 @@ export { IPodPlayer } from "./IPodPlayer";
 export { ClockTimerWidget } from "./ClockTimerWidget";
 export { CSVImportModal } from "./CSVImportModal";
 export { AIQuizGenerator } from "./AIQuizGenerator";
+export { PomodoroTimer } from "./PomodoroTimer";

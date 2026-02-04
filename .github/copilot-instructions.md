@@ -1,11 +1,12 @@
 # studyblog - AI Coding Instructions
 
 ## 1. Project Overview
-**studyblog** is an academic organizer PWA for Thai students, featuring a nostalgic **Y2K aesthetic**.
+**studyblog** is an academic organizer **Web App** for Thai students, featuring a nostalgic **Y2K aesthetic**.
 - **Stack**: Next.js 16 (App Router), React 19, Firebase v12, Tailwind CSS v4.
 - **Language**: TypeScript throughout.
 - **Localization**: UI text MUST be in **Thai** (font: `Kanit`). Headings use `Felipa`.
-- **Target**: Mobile-first PWA, but fully responsive for desktop.
+- **Target**: Mobile-first Web App, fully responsive for desktop.
+- **Error Handling**: Uses `ErrorBoundary` component for graceful error recovery.
 
 ## 2. Architecture & Data Flow
 

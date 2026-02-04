@@ -145,6 +145,103 @@ export interface UserSettings {
   notifications: boolean;
   musicEnabled: boolean;
   preferredLanguage: "th" | "en";
+  // Custom Theme
+  customColors?: {
+    primary: string;
+    accent: string;
+  };
+  // Pomodoro Settings
+  pomodoroWorkMinutes: number;
+  pomodoroBreakMinutes: number;
+  pomodoroLongBreakMinutes: number;
+  pomodoroSessionsBeforeLongBreak: number;
+}
+
+// =====================
+// NEW: Tags for Homework
+// =====================
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  userId: string;
+  createdAt: Date;
+}
+
+// =====================
+// NEW: Notes per Subject
+// =====================
+
+export interface Note {
+  id: string;
+  subjectId: string;
+  title: string;
+  content: string;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// =====================
+// NEW: Study Goals
+// =====================
+
+export interface StudyGoal {
+  id: string;
+  title: string;
+  description?: string;
+  targetDate: Date;
+  targetType: "homework" | "quiz" | "study_hours" | "streak" | "custom";
+  targetValue: number;
+  currentValue: number;
+  completed: boolean;
+  userId: string;
+  createdAt: Date;
+  completedAt?: Date;
+}
+
+// =====================
+// NEW: Enhanced Study Statistics
+// =====================
+
+export interface StudySession {
+  id: string;
+  userId: string;
+  subjectId?: string;
+  type: "pomodoro" | "free" | "review";
+  durationMinutes: number;
+  date: Date;
+  completed: boolean;
+}
+
+export interface DailyStats {
+  date: string; // YYYY-MM-DD
+  studyMinutes: number;
+  homeworkCompleted: number;
+  quizzesTaken: number;
+  flashcardsReviewed: number;
+}
+
+// =====================
+// NEW: Shared Quiz
+// =====================
+
+export interface SharedQuiz {
+  id: string;
+  quizBankId: string;
+  shareCode: string; // 6-char unique code
+  createdBy: string;
+  createdByName: string;
+  title: string;
+  questionCount: number;
+  expiresAt?: Date;
+  createdAt: Date;
+}
+
+// Update Homework to include tags
+export interface HomeworkWithTags extends Homework {
+  tags?: string[]; // Tag IDs
 }
 
 // =====================
@@ -781,4 +878,458 @@ export async function updateQuizBank(
 
 export async function deleteQuizBank(bankId: string): Promise<void> {
   await deleteDoc(doc(db, "quizBanks", bankId));
+}
+
+// =====================
+// Tags CRUD
+// =====================
+
+export async function getTags(userId: string): Promise<Tag[]> {
+  const q = query(
+    collection(db, "tags"),
+    where("userId", "==", userId),
+    orderBy("createdAt", "desc")
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: doc.data().createdAt?.toDate() || new Date(),
+  })) as Tag[];
+}
+
+export async function createTag(
+  userId: string,
+  data: { name: string; color: string }
+): Promise<string> {
+  const docRef = await addDoc(collection(db, "tags"), {
+    ...data,
+    userId,
+    createdAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+export async function updateTag(
+  tagId: string,
+  data: Partial<Tag>
+): Promise<void> {
+  await updateDoc(doc(db, "tags", tagId), data);
+}
+
+export async function deleteTag(tagId: string): Promise<void> {
+  await deleteDoc(doc(db, "tags", tagId));
+}
+
+// =====================
+// Notes CRUD
+// =====================
+
+export async function getNotes(userId: string, subjectId?: string): Promise<Note[]> {
+  let q;
+  if (subjectId) {
+    q = query(
+      collection(db, "notes"),
+      where("userId", "==", userId),
+      where("subjectId", "==", subjectId),
+      orderBy("updatedAt", "desc")
+    );
+  } else {
+    q = query(
+      collection(db, "notes"),
+      where("userId", "==", userId),
+      orderBy("updatedAt", "desc")
+    );
+  }
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    createdAt: doc.data().createdAt?.toDate() || new Date(),
+    updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+  })) as Note[];
+}
+
+export async function createNote(
+  userId: string,
+  data: { subjectId: string; title: string; content: string }
+): Promise<string> {
+  const docRef = await addDoc(collection(db, "notes"), {
+    ...data,
+    userId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+export async function updateNote(
+  noteId: string,
+  data: Partial<Note>
+): Promise<void> {
+  await updateDoc(doc(db, "notes", noteId), {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteNote(noteId: string): Promise<void> {
+  await deleteDoc(doc(db, "notes", noteId));
+}
+
+// =====================
+// Study Goals CRUD
+// =====================
+
+export async function getStudyGoals(userId: string): Promise<StudyGoal[]> {
+  const q = query(
+    collection(db, "studyGoals"),
+    where("userId", "==", userId),
+    orderBy("targetDate", "asc")
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    targetDate: doc.data().targetDate?.toDate() || new Date(),
+    createdAt: doc.data().createdAt?.toDate() || new Date(),
+    completedAt: doc.data().completedAt?.toDate(),
+  })) as StudyGoal[];
+}
+
+export async function createStudyGoal(
+  userId: string,
+  data: Omit<StudyGoal, "id" | "userId" | "createdAt" | "currentValue" | "completed">
+): Promise<string> {
+  const docRef = await addDoc(collection(db, "studyGoals"), {
+    ...data,
+    userId,
+    currentValue: 0,
+    completed: false,
+    createdAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+export async function updateStudyGoal(
+  goalId: string,
+  data: Partial<StudyGoal>
+): Promise<void> {
+  const updateData: Record<string, unknown> = { ...data };
+  if (data.completed) {
+    updateData.completedAt = serverTimestamp();
+  }
+  await updateDoc(doc(db, "studyGoals", goalId), updateData);
+}
+
+export async function deleteStudyGoal(goalId: string): Promise<void> {
+  await deleteDoc(doc(db, "studyGoals", goalId));
+}
+
+// =====================
+// Study Sessions CRUD
+// =====================
+
+export async function getStudySessions(
+  userId: string,
+  startDate?: Date,
+  endDate?: Date
+): Promise<StudySession[]> {
+  let q = query(
+    collection(db, "studySessions"),
+    where("userId", "==", userId),
+    orderBy("date", "desc")
+  );
+  
+  const snapshot = await getDocs(q);
+  let sessions = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+    date: doc.data().date?.toDate() || new Date(),
+  })) as StudySession[];
+
+  // Filter by date range if provided
+  if (startDate) {
+    sessions = sessions.filter(s => s.date >= startDate);
+  }
+  if (endDate) {
+    sessions = sessions.filter(s => s.date <= endDate);
+  }
+  
+  return sessions;
+}
+
+export async function createStudySession(
+  userId: string,
+  data: Omit<StudySession, "id" | "userId">
+): Promise<string> {
+  const docRef = await addDoc(collection(db, "studySessions"), {
+    ...data,
+    userId,
+  });
+  return docRef.id;
+}
+
+export async function updateStudySession(
+  sessionId: string,
+  data: Partial<StudySession>
+): Promise<void> {
+  await updateDoc(doc(db, "studySessions", sessionId), data);
+}
+
+// =====================
+// Shared Quiz CRUD
+// =====================
+
+function generateShareCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+export async function getSharedQuizByCode(shareCode: string): Promise<SharedQuiz | null> {
+  const q = query(
+    collection(db, "sharedQuizzes"),
+    where("shareCode", "==", shareCode.toUpperCase())
+  );
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return null;
+  
+  const doc = snapshot.docs[0];
+  const data = doc.data();
+  
+  // Check if expired
+  if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
+    return null;
+  }
+  
+  return {
+    id: doc.id,
+    ...data,
+    expiresAt: data.expiresAt?.toDate(),
+    createdAt: data.createdAt?.toDate() || new Date(),
+  } as SharedQuiz;
+}
+
+export async function createSharedQuiz(
+  userId: string,
+  userName: string,
+  quizBankId: string,
+  title: string,
+  questionCount: number,
+  expiresInDays?: number
+): Promise<SharedQuiz> {
+  const shareCode = generateShareCode();
+  const expiresAt = expiresInDays
+    ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
+    : null;
+  
+  const docRef = await addDoc(collection(db, "sharedQuizzes"), {
+    quizBankId,
+    shareCode,
+    createdBy: userId,
+    createdByName: userName,
+    title,
+    questionCount,
+    expiresAt,
+    createdAt: serverTimestamp(),
+  });
+  
+  return {
+    id: docRef.id,
+    quizBankId,
+    shareCode,
+    createdBy: userId,
+    createdByName: userName,
+    title,
+    questionCount,
+    expiresAt: expiresAt || undefined,
+    createdAt: new Date(),
+  };
+}
+
+export async function deleteSharedQuiz(sharedQuizId: string): Promise<void> {
+  await deleteDoc(doc(db, "sharedQuizzes", sharedQuizId));
+}
+
+// =====================
+// Daily Stats (for streak tracking)
+// =====================
+
+export async function getDailyStats(
+  userId: string,
+  days: number = 30
+): Promise<DailyStats[]> {
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  
+  const q = query(
+    collection(db, "dailyStats"),
+    where("userId", "==", userId),
+    orderBy("date", "desc")
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({
+    ...doc.data(),
+  })) as DailyStats[];
+}
+
+export async function updateDailyStats(
+  userId: string,
+  date: string,
+  updates: Partial<Omit<DailyStats, "date">>
+): Promise<void> {
+  const docId = `${userId}_${date}`;
+  const docRef = doc(db, "dailyStats", docId);
+  const docSnap = await getDoc(docRef);
+  
+  if (docSnap.exists()) {
+    const current = docSnap.data();
+    await updateDoc(docRef, {
+      studyMinutes: (current.studyMinutes || 0) + (updates.studyMinutes || 0),
+      homeworkCompleted: (current.homeworkCompleted || 0) + (updates.homeworkCompleted || 0),
+      quizzesTaken: (current.quizzesTaken || 0) + (updates.quizzesTaken || 0),
+      flashcardsReviewed: (current.flashcardsReviewed || 0) + (updates.flashcardsReviewed || 0),
+    });
+  } else {
+    await setDoc(docRef, {
+      userId,
+      date,
+      studyMinutes: updates.studyMinutes || 0,
+      homeworkCompleted: updates.homeworkCompleted || 0,
+      quizzesTaken: updates.quizzesTaken || 0,
+      flashcardsReviewed: updates.flashcardsReviewed || 0,
+    });
+  }
+}
+
+// Calculate study streak
+export async function calculateStudyStreak(userId: string): Promise<number> {
+  const stats = await getDailyStats(userId, 365);
+  if (stats.length === 0) return 0;
+  
+  let streak = 0;
+  const today = new Date().toISOString().split("T")[0];
+  const sortedStats = stats.sort((a, b) => b.date.localeCompare(a.date));
+  
+  for (let i = 0; i < sortedStats.length; i++) {
+    const stat = sortedStats[i];
+    const expectedDate = new Date();
+    expectedDate.setDate(expectedDate.getDate() - i);
+    const expectedDateStr = expectedDate.toISOString().split("T")[0];
+    
+    if (stat.date === expectedDateStr && stat.studyMinutes > 0) {
+      streak++;
+    } else if (i === 0 && stat.date !== today) {
+      // Allow missing today
+      continue;
+    } else {
+      break;
+    }
+  }
+  
+  return streak;
+}
+
+// =====================
+// Global Search
+// =====================
+
+export interface SearchResult {
+  type: "homework" | "subject" | "note" | "flashcard" | "goal";
+  id: string;
+  title: string;
+  subtitle?: string;
+  subjectId?: string;
+  subjectName?: string;
+}
+
+export async function globalSearch(
+  userId: string,
+  searchQuery: string
+): Promise<SearchResult[]> {
+  const query_lower = searchQuery.toLowerCase();
+  const results: SearchResult[] = [];
+  
+  // Search subjects
+  const subjects = await getSubjects(userId);
+  subjects.forEach(s => {
+    if (s.name.toLowerCase().includes(query_lower)) {
+      results.push({
+        type: "subject",
+        id: s.id,
+        title: s.name,
+      });
+    }
+  });
+  
+  // Search homework
+  const homework = await getHomework(userId);
+  homework.forEach(h => {
+    if (h.title.toLowerCase().includes(query_lower) || 
+        h.description?.toLowerCase().includes(query_lower)) {
+      const subject = subjects.find(s => s.id === h.subjectId);
+      results.push({
+        type: "homework",
+        id: h.id,
+        title: h.title,
+        subtitle: h.description,
+        subjectId: h.subjectId,
+        subjectName: subject?.name,
+      });
+    }
+  });
+  
+  // Search notes
+  const notes = await getNotes(userId);
+  notes.forEach(n => {
+    if (n.title.toLowerCase().includes(query_lower) ||
+        n.content.toLowerCase().includes(query_lower)) {
+      const subject = subjects.find(s => s.id === n.subjectId);
+      results.push({
+        type: "note",
+        id: n.id,
+        title: n.title,
+        subtitle: n.content.substring(0, 50),
+        subjectId: n.subjectId,
+        subjectName: subject?.name,
+      });
+    }
+  });
+  
+  // Search flashcards
+  const flashcards = await getFlashcards(userId);
+  flashcards.forEach(f => {
+    if (f.question.toLowerCase().includes(query_lower) ||
+        f.answer.toLowerCase().includes(query_lower)) {
+      const subject = subjects.find(s => s.id === f.subjectId);
+      results.push({
+        type: "flashcard",
+        id: f.id,
+        title: f.question,
+        subtitle: f.answer.substring(0, 50),
+        subjectId: f.subjectId,
+        subjectName: subject?.name,
+      });
+    }
+  });
+  
+  // Search goals
+  const goals = await getStudyGoals(userId);
+  goals.forEach(g => {
+    if (g.title.toLowerCase().includes(query_lower) ||
+        g.description?.toLowerCase().includes(query_lower)) {
+      results.push({
+        type: "goal",
+        id: g.id,
+        title: g.title,
+        subtitle: g.description,
+      });
+    }
+  });
+  
+  return results;
 }

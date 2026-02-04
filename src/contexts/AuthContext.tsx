@@ -126,10 +126,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Default values for when context is not available (during static generation)
+const defaultAuthContext: AuthContextType = {
+  user: null,
+  userProfile: null,
+  loading: true,
+  signInWithGoogle: async () => null,
+  signOut: async () => {},
+  updateProfile: async () => {},
+};
+
 export function useAuth() {
   const context = useContext(AuthContext);
+  // Return default values during static generation instead of throwing
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    // In development, warn about missing provider
+    if (typeof window !== "undefined") {
+      console.warn("useAuth must be used within an AuthProvider");
+    }
+    return defaultAuthContext;
   }
   return context;
 }

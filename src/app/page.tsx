@@ -54,6 +54,7 @@ function TodoDashboard() {
 
   // Theme colors
   const primaryColor = "#00568C";
+  const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
   const textFaint = isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)";
   const borderColor = primaryColor;

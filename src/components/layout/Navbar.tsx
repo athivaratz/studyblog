@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CheckSquare, Brain, Calendar, User } from "lucide-react";
+import { CheckSquare, Brain, Calendar, User, Compass } from "lucide-react";
 import { useTheme } from "@/contexts";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
  * 1. To-Do - หน้าแรก + สิ่งที่ต้องทำ
  * 2. ตารางเรียน - จัดการตารางเรียน
  * 3. ทบทวน - ระบบทบทวนเนื้อหา + เกม
+ * 4. Portal - ดูข้อสอบสาธารณะ
  * 
  * คลิกที่ Profile = ไปหน้า Settings
  * ปุ่ม Logout อยู่ใน Settings เท่านั้น
@@ -39,6 +40,7 @@ const navItems: NavItem[] = [
   { icon: <CheckSquare className="w-5 h-5" />, label: "To-Do", href: "/", color: "#C5E8FF", darkColor: "#1A3A4D" },
   { icon: <Calendar className="w-5 h-5" />, label: "ตารางเรียน", href: "/schedule", color: "#C5E8FF", darkColor: "#1A3A4D", id: "tour-nav-schedule" },
   { icon: <Brain className="w-5 h-5" />, label: "ทบทวน", href: "/review", color: "#C5E8FF", darkColor: "#1A3A4D", id: "tour-nav-review" },
+  { icon: <Compass className="w-5 h-5" />, label: "Portal", href: "/portal", color: "#E8D5F2", darkColor: "#3D2A4D", id: "tour-nav-portal" },
 ];
 
 // Profile Button (Click to go to Settings)
@@ -156,6 +158,12 @@ export function Navbar() {
             {pathname === "/review" && "ทบทวน"}
             {pathname === "/settings" && "ตั้งค่า"}
             {pathname === "/todo" && "To-Do"}
+            {pathname === "/stats" && "สถิติ"}
+            {pathname === "/notes" && "บันทึก"}
+            {pathname === "/goals" && "เป้าหมาย"}
+            {pathname === "/homework" && "การบ้าน"}
+            {pathname === "/subjects" && "วิชา"}
+            {pathname === "/calendar" && "ปฏิทิน"}
           </h1>
 
           {/* Profile (click to Settings) */}
