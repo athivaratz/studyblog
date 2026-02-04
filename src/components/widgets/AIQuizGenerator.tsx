@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { Subject, Flashcard } from "@/lib/firebaseServices";
 import { generateQuizQuestions, researchAndGenerateQuestions, GameQuestion } from "@/lib/geminiService";
 import {
@@ -15,9 +15,6 @@ import {
   CheckCircle,
   ChevronDown,
 } from "lucide-react";
-
-// Primary color
-const primaryColor = "#00568C";
 
 // Grade levels for Thai students
 const gradeLevels = [
@@ -51,6 +48,7 @@ export function AIQuizGenerator({
   onGenerate,
 }: AIQuizGeneratorProps) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
 
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);

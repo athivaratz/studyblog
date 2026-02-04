@@ -3,13 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, BookOpen, ClipboardList, FileText, Brain, Target, Loader2 } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { globalSearch, SearchResult } from "@/lib/firebaseServices";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
-
-const primaryColor = "#00568C";
 
 const typeIcons: Record<string, React.ReactNode> = {
   subject: <BookOpen className="w-4 h-4" />,
@@ -29,6 +27,7 @@ const typeColors: Record<string, string> = {
 
 export function GlobalSearch() {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const { user } = useAuth();
   const { t } = useLanguage();
   const router = useRouter();

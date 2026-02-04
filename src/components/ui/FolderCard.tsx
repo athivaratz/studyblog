@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useTheme } from "@/contexts";
+import { useTheme, usePrimaryColor } from "@/contexts";
 import { ReactNode } from "react";
 
 interface FolderCardProps {
@@ -20,9 +20,8 @@ export function FolderCard({
   id
 }: FolderCardProps) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
-
-  const primaryColor = "#00568C";
   const bgColor = isDark ? "#2D2D2D" : "#FFFFFF";
   const borderColor = primaryColor;
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";

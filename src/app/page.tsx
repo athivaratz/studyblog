@@ -11,7 +11,7 @@ import { FolderCard, ConfirmDialog } from "@/components/ui";
 import { IPodPlayer, MobileUtilities, ClockTimerWidget } from "@/components/widgets";
 import { TutorialOverlay } from "@/components/tutorial";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useTodos, useInitializeUser } from "@/hooks/useFirebaseData";
 import {
@@ -53,7 +53,7 @@ function TodoDashboard() {
   const displayName = userProfile?.displayName?.split(" ")[0] || "นักเรียน";
 
   // Theme colors
-  const primaryColor = "#00568C";
+  const primaryColor = usePrimaryColor();
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
   const textFaint = isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)";

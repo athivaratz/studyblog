@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts";
+import { useTheme, usePrimaryColor } from "@/contexts";
 import { LogIn, LogOut, User, Loader2 } from "lucide-react";
 
 interface LoginButtonProps {
@@ -13,10 +13,8 @@ interface LoginButtonProps {
 export function LoginButton({ className = "", variant = "full" }: LoginButtonProps) {
   const { user, userProfile, loading, signInWithGoogle, signOut } = useAuth();
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
-  
-  // Theme-aware colors
-  const primaryColor = "#00568C";
   const borderColor = primaryColor;
   const shadowColor = isDark ? "#404040" : primaryColor;
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";

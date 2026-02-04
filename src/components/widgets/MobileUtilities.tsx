@@ -5,19 +5,18 @@ import { useState } from "react";
 import { Play, Pause, SkipForward, SkipBack, Clock, X, Music } from "lucide-react";
 import { ClockTimerWidget } from "./ClockTimerWidget";
 import { useMusic } from "@/contexts/MusicContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 
 interface MobileUtilitiesProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const primaryColor = "#00568C";
-
 export function MobileUtilities({ isOpen, onClose }: MobileUtilitiesProps) {
   const [activeTab, setActiveTab] = useState<"clock" | "music">("clock");
   const { isPlaying, currentTrack, tracks, togglePlay, changeTrack } = useMusic();
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
 
   // Theme colors

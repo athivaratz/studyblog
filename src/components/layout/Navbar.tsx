@@ -3,8 +3,8 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CheckSquare, Brain, Calendar, User, Compass } from "lucide-react";
-import { useTheme } from "@/contexts";
+import { BookOpen, Brain, Calendar, User, Compass } from "lucide-react";
+import { useTheme, usePrimaryColor } from "@/contexts";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
  * ================================================
  * 
  * Menu Items:
- * 1. To-Do - หน้าแรก + สิ่งที่ต้องทำ
+ * 1. วิชา - ศูนย์กลางจัดการวิชา
  * 2. ตารางเรียน - จัดการตารางเรียน
  * 3. ทบทวน - ระบบทบทวนเนื้อหา + เกม
  * 4. Portal - ดูข้อสอบสาธารณะ
@@ -34,10 +34,8 @@ interface NavItem {
   id?: string;
 }
 
-const primaryColor = "#00568C";
-
 const navItems: NavItem[] = [
-  { icon: <CheckSquare className="w-5 h-5" />, label: "To-Do", href: "/", color: "#C5E8FF", darkColor: "#1A3A4D" },
+  { icon: <BookOpen className="w-5 h-5" />, label: "วิชา", href: "/subjects", color: "#FFF3B0", darkColor: "#4D4A2A", id: "tour-nav-subjects" },
   { icon: <Calendar className="w-5 h-5" />, label: "ตารางเรียน", href: "/schedule", color: "#C5E8FF", darkColor: "#1A3A4D", id: "tour-nav-schedule" },
   { icon: <Brain className="w-5 h-5" />, label: "ทบทวน", href: "/review", color: "#C5E8FF", darkColor: "#1A3A4D", id: "tour-nav-review" },
   { icon: <Compass className="w-5 h-5" />, label: "Portal", href: "/portal", color: "#E8D5F2", darkColor: "#3D2A4D", id: "tour-nav-portal" },
@@ -47,6 +45,7 @@ const navItems: NavItem[] = [
 function ProfileButton({ compact = false }: { compact?: boolean }) {
   const { user, userProfile } = useAuth();
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
 
   const borderColor = primaryColor;
@@ -103,6 +102,7 @@ function ProfileButton({ compact = false }: { compact?: boolean }) {
 
 export function Navbar() {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const pathname = usePathname();
   const isDark = theme === "dark";
 

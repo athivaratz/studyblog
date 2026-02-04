@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
-import { useMusic, useTheme } from "@/contexts";
+import { useMusic, useTheme, usePrimaryColor } from "@/contexts";
 
 interface IPodPlayerProps {
   className?: string;
@@ -21,7 +21,7 @@ export function IPodPlayer({ className = "" }: IPodPlayerProps) {
   } = useMusic();
 
   const currentTrackData = tracks[currentTrackIndex];
-  const primaryColor = "#00568C";
+  const primaryColor = usePrimaryColor();
   
   // For light mode, use the iPod image from public
   // For dark mode, we'll create a dark styled version

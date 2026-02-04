@@ -928,6 +928,21 @@ export function useDailyStats(days: number = 7) {
 // useSharedQuiz Hook
 // =====================
 
+interface ShareQuizOptions {
+  questions?: Array<{
+    question: string;
+    correctAnswer: string;
+    wrongAnswers: string[];
+    difficulty?: "easy" | "medium" | "hard";
+    explanation?: string;
+  }>;
+  description?: string;
+  subjectName?: string;
+  subjectId?: string;
+  difficulty?: "easy" | "medium" | "hard" | "mixed";
+  tags?: string[];
+}
+
 export function useSharedQuiz() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -938,7 +953,8 @@ export function useSharedQuiz() {
     quizBankId: string,
     title: string,
     questionCount: number,
-    expiresInDays?: number
+    expiresInDays?: number,
+    options?: ShareQuizOptions
   ): Promise<SharedQuiz | null> => {
     if (!user) return null;
     setLoading(true);
@@ -950,7 +966,8 @@ export function useSharedQuiz() {
         quizBankId,
         title,
         questionCount,
-        expiresInDays
+        expiresInDays,
+        options
       );
       return sharedQuiz;
     } catch (err) {

@@ -7,7 +7,7 @@ import { FolderCard } from "@/components/ui";
 import { ClockTimerWidget, IPodPlayer, MobileUtilities } from "@/components/widgets";
 import { TutorialOverlay } from "@/components/tutorial";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useSchedule, useSubjects, useInitializeUser } from "@/hooks/useFirebaseData";
 import { Schedule } from "@/lib/firebaseServices";
@@ -20,9 +20,6 @@ import {
   Pencil
 } from "lucide-react";
 
-// Primary color
-const primaryColor = "#00568C";
-
 // Day labels
 const dayLabels = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
 const shortDayLabels = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
@@ -31,6 +28,7 @@ const shortDayLabels = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 // Schedule Dashboard
 function ScheduleDashboard() {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const { subjects } = useSubjects();
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
@@ -287,6 +285,7 @@ function ScheduleFormModal({
   } | null;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
 
   const [subjectId, setSubjectId] = useState(initialData?.subjectId || "");

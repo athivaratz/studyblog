@@ -227,6 +227,14 @@ export interface DailyStats {
 // NEW: Shared Quiz
 // =====================
 
+export interface SharedQuizQuestion {
+  question: string;
+  correctAnswer: string;
+  wrongAnswers: string[];
+  difficulty?: "easy" | "medium" | "hard";
+  explanation?: string;
+}
+
 export interface SharedQuiz {
   id: string;
   quizBankId: string;
@@ -234,7 +242,15 @@ export interface SharedQuiz {
   createdBy: string;
   createdByName: string;
   title: string;
+  description?: string;
+  subjectName?: string;
+  subjectId?: string;
   questionCount: number;
+  questions?: SharedQuizQuestion[]; // Actual questions data
+  difficulty?: "easy" | "medium" | "hard" | "mixed";
+  tags?: string[];
+  playCount?: number;
+  rating?: number;
   expiresAt?: Date;
   createdAt: Date;
 }
@@ -1120,23 +1136,43 @@ export async function createSharedQuiz(
   quizBankId: string,
   title: string,
   questionCount: number,
-  expiresInDays?: number
+  expiresInDays?: number,
+  options?: {
+    questions?: SharedQuizQuestion[];
+    description?: string;
+    subjectName?: string;
+    subjectId?: string;
+    difficulty?: "easy" | "medium" | "hard" | "mixed";
+    tags?: string[];
+  }
 ): Promise<SharedQuiz> {
   const shareCode = generateShareCode();
   const expiresAt = expiresInDays
     ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
     : null;
   
-  const docRef = await addDoc(collection(db, "sharedQuizzes"), {
+  const docData: Record<string, unknown> = {
     quizBankId,
     shareCode,
     createdBy: userId,
     createdByName: userName,
     title,
     questionCount,
+    playCount: 0,
+    rating: 0,
     expiresAt,
     createdAt: serverTimestamp(),
-  });
+  };
+  
+  // Add optional fields
+  if (options?.questions) docData.questions = options.questions;
+  if (options?.description) docData.description = options.description;
+  if (options?.subjectName) docData.subjectName = options.subjectName;
+  if (options?.subjectId) docData.subjectId = options.subjectId;
+  if (options?.difficulty) docData.difficulty = options.difficulty;
+  if (options?.tags) docData.tags = options.tags;
+  
+  const docRef = await addDoc(collection(db, "sharedQuizzes"), docData);
   
   return {
     id: docRef.id,
@@ -1146,6 +1182,14 @@ export async function createSharedQuiz(
     createdByName: userName,
     title,
     questionCount,
+    questions: options?.questions,
+    description: options?.description,
+    subjectName: options?.subjectName,
+    subjectId: options?.subjectId,
+    difficulty: options?.difficulty,
+    tags: options?.tags,
+    playCount: 0,
+    rating: 0,
     expiresAt: expiresAt || undefined,
     createdAt: new Date(),
   };

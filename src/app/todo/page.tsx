@@ -7,7 +7,7 @@ import { FolderCard } from "@/components/ui";
 import { ClockTimerWidget, IPodPlayer, MobileUtilities } from "@/components/widgets";
 import { TutorialOverlay } from "@/components/tutorial";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useTodos, useSubjects, useInitializeUser } from "@/hooks/useFirebaseData";
 import {
@@ -25,9 +25,6 @@ import {
   Filter
 } from "lucide-react";
 
-// Primary color
-const primaryColor = "#00568C";
-
 // Category labels
 const categoryLabels = {
   all: "ทั้งหมด",
@@ -40,6 +37,7 @@ const categoryLabels = {
 // Todo List Full Page
 function TodoFullPage() {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const { subjects } = useSubjects();
   const {
@@ -331,6 +329,7 @@ function AddTodoModal({
   subjects: Array<{ id: string; name: string }>;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
 
   const [text, setText] = useState("");

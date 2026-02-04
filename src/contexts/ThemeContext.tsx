@@ -93,3 +93,6 @@ export function useTheme() {
   }
   return context;
 }
+
+// Re-export usePrimaryColor from CustomColorsContext for convenience
+export { usePrimaryColor, useCustomColors } from "./CustomColorsContext";

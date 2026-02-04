@@ -6,7 +6,7 @@ import { Navbar } from "@/components/layout";
 import { FolderCard } from "@/components/ui";
 import { IPodPlayer, ClockTimerWidget } from "@/components/widgets";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LoginCard } from "@/components/auth";
 import {
@@ -29,11 +29,10 @@ import {
 } from "@/lib/firebaseServices";
 import { useHomework, useFlashcards, useReviewSessions } from "@/hooks/useFirebaseData";
 
-const primaryColor = "#00568C";
-
 export default function StatsPage() {
   const { user, loading: authLoading } = useAuth();
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const { t } = useLanguage();
   const isDark = theme === "dark";
 

@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { MusicProvider } from "@/contexts/MusicContext";
 import { SubjectsProvider } from "@/contexts/SubjectContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { CustomColorsProvider } from "@/contexts/CustomColorsContext";
 import { NetworkWarningModal } from "@/components/ui";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ReactNode } from "react";
@@ -16,10 +17,12 @@ export function Providers({ children }: { children: ReactNode }) {
         <LanguageProvider>
           <MusicProvider>
             <AuthProvider>
-              <SubjectsProvider>
-                {children}
-                <NetworkWarningModal />
-              </SubjectsProvider>
+              <CustomColorsProvider>
+                <SubjectsProvider>
+                  {children}
+                  <NetworkWarningModal />
+                </SubjectsProvider>
+              </CustomColorsProvider>
             </AuthProvider>
           </MusicProvider>
         </LanguageProvider>

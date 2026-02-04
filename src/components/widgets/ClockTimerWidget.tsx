@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { Play, Pause, RotateCcw, Clock, Timer } from "lucide-react";
-import { useTheme } from "@/contexts";
+import { useTheme, usePrimaryColor } from "@/contexts";
 
 interface ClockTimerWidgetProps {
   size?: number;
@@ -28,7 +28,7 @@ export function ClockTimerWidget({ size = 150, className = "", id }: ClockTimerW
   const [stopwatchRunning, setStopwatchRunning] = useState(false);
   const [stopwatchSeconds, setStopwatchSeconds] = useState(0);
 
-  const primaryColor = "#00568C";
+  const primaryColor = usePrimaryColor();
   const bgColor = isDark ? "#1A1A1A" : "#FFFFFF";
   const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
   const borderColor = primaryColor;

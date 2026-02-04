@@ -6,7 +6,7 @@ import { Navbar } from "@/components/layout";
 import { FolderCard, ConfirmDialog } from "@/components/ui";
 import { IPodPlayer, ClockTimerWidget } from "@/components/widgets";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LoginCard } from "@/components/auth";
 import { useSubjects, useNotes } from "@/hooks/useFirebaseData";
@@ -22,11 +22,10 @@ import {
   BookOpen,
 } from "lucide-react";
 
-const primaryColor = "#00568C";
-
 export default function NotesPage() {
   const { user, loading: authLoading } = useAuth();
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const { t } = useLanguage();
   const isDark = theme === "dark";
 
@@ -464,6 +463,7 @@ function NoteEditor({
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
+  const primaryColor = usePrimaryColor();
 
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const inputBg = isDark ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.5)";

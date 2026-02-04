@@ -6,7 +6,7 @@ import { FolderCard } from "@/components/ui";
 import { IPodPlayer, ClockTimerWidget, MobileUtilities } from "@/components/widgets";
 import { TutorialOverlay, useTutorial } from "@/components/tutorial/TutorialOverlay";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor, useCustomColors } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LoginCard } from "@/components/auth";
 import { useUserSettings, useInitializeUser } from "@/hooks/useFirebaseData";
@@ -29,9 +29,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-// Primary color
-const primaryColor = "#00568C";
-
 // Preset theme colors
 const presetThemes = [
   { name: "Ocean Blue", primary: "#00568C", accent: "#0080C0" },
@@ -51,12 +48,14 @@ function CustomThemeModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  currentSettings: { primaryColor?: string; accentColor?: string } | null;
-  onSave: (colors: { primaryColor: string; accentColor: string }) => void;
+  currentSettings: { primaryColor?: string; accentColor?: string; theme?: "light" | "dark" } | null;
+  onSave: (colors: { primaryColor: string; accentColor: string; theme: "light" | "dark" }) => void;
 }) {
   const { theme, setTheme } = useTheme();
+  const { primaryColor, setPrimaryColor, setAccentColor } = useCustomColors();
   const isDark = theme === "dark";
-  const [selectedPrimary, setSelectedPrimary] = useState(currentSettings?.primaryColor || "#00568C");
+  const [selectedTheme, setSelectedTheme] = useState<"light" | "dark">(currentSettings?.theme || theme);
+  const [selectedPrimary, setSelectedPrimary] = useState(currentSettings?.primaryColor || primaryColor);
   const [selectedAccent, setSelectedAccent] = useState(currentSettings?.accentColor || "#0080C0");
   const [saving, setSaving] = useState(false);
 
@@ -69,7 +68,15 @@ function CustomThemeModal({
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave({ primaryColor: selectedPrimary, accentColor: selectedAccent });
+    // Update ThemeContext
+    setTheme(selectedTheme);
+    
+    // Update CustomColorsContext (this also applies CSS variables)
+    setPrimaryColor(selectedPrimary);
+    setAccentColor(selectedAccent);
+    
+    // Save to Firestore
+    await onSave({ primaryColor: selectedPrimary, accentColor: selectedAccent, theme: selectedTheme });
     setSaving(false);
     onClose();
   };
@@ -107,27 +114,27 @@ function CustomThemeModal({
           </label>
           <div className="flex gap-2">
             <motion.button
-              onClick={() => setTheme("light")}
+              onClick={() => setSelectedTheme("light")}
               className="flex-1 p-3 rounded-xl border-2 flex items-center justify-center gap-2"
               style={{
-                borderColor: !isDark ? primaryColor : "transparent",
-                backgroundColor: !isDark ? `${primaryColor}20` : inputBg,
+                borderColor: selectedTheme === "light" ? primaryColor : "transparent",
+                backgroundColor: selectedTheme === "light" ? `${primaryColor}20` : inputBg,
               }}
               whileTap={{ scale: 0.98 }}
             >
-              <Sun className="w-5 h-5" style={{ color: !isDark ? primaryColor : textMuted }} />
+              <Sun className="w-5 h-5" style={{ color: selectedTheme === "light" ? primaryColor : textMuted }} />
               <span className="font-kanit text-sm" style={{ color: textColor }}>สว่าง</span>
             </motion.button>
             <motion.button
-              onClick={() => setTheme("dark")}
+              onClick={() => setSelectedTheme("dark")}
               className="flex-1 p-3 rounded-xl border-2 flex items-center justify-center gap-2"
               style={{
-                borderColor: isDark ? primaryColor : "transparent",
-                backgroundColor: isDark ? `${primaryColor}20` : inputBg,
+                borderColor: selectedTheme === "dark" ? primaryColor : "transparent",
+                backgroundColor: selectedTheme === "dark" ? `${primaryColor}20` : inputBg,
               }}
               whileTap={{ scale: 0.98 }}
             >
-              <Moon className="w-5 h-5" style={{ color: isDark ? primaryColor : textMuted }} />
+              <Moon className="w-5 h-5" style={{ color: selectedTheme === "dark" ? primaryColor : textMuted }} />
               <span className="font-kanit text-sm" style={{ color: textColor }}>มืด</span>
             </motion.button>
           </div>
@@ -302,6 +309,7 @@ function SettingItem({
   onClick?: () => void;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
 
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
@@ -378,6 +386,7 @@ function EditProfileModal({
   currentPhoto: string;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const { updateProfile } = useAuth();
   const [name, setName] = useState(currentName);
@@ -489,6 +498,7 @@ function EditProfileModal({
 function SettingsDashboard() {
   const { user, userProfile, signOut } = useAuth();
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const { language, setLanguage } = useLanguage();
   const isDark = theme === "dark";
   const { settings, loading: settingsLoading, updateSettings } = useUserSettings();
@@ -707,12 +717,14 @@ function SettingsDashboard() {
         currentSettings={{
           primaryColor: settings?.customColors?.primary || "#00568C",
           accentColor: settings?.customColors?.accent || "#0080C0",
+          theme: (settings?.theme === "auto" ? "light" : settings?.theme) || "light",
         }}
-        onSave={async (colors) => {
+        onSave={async (data) => {
           await updateSettings({
+            theme: data.theme,
             customColors: {
-              primary: colors.primaryColor,
-              accent: colors.accentColor,
+              primary: data.primaryColor,
+              accent: data.accentColor,
             },
           });
         }}

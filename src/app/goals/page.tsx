@@ -6,7 +6,7 @@ import { Navbar } from "@/components/layout";
 import { FolderCard, ConfirmDialog } from "@/components/ui";
 import { IPodPlayer, ClockTimerWidget } from "@/components/widgets";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LoginCard } from "@/components/auth";
 import { useStudyGoals } from "@/hooks/useFirebaseData";
@@ -24,8 +24,6 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-const primaryColor = "#00568C";
-
 const goalTypes = [
   { value: "homework", label: "ทำการบ้าน", icon: "📚", unit: "ชิ้น" },
   { value: "quiz", label: "ทำแบบทดสอบ", icon: "🎯", unit: "ครั้ง" },
@@ -37,6 +35,7 @@ const goalTypes = [
 export default function GoalsPage() {
   const { user, loading: authLoading } = useAuth();
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const { t } = useLanguage();
   const isDark = theme === "dark";
 

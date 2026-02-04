@@ -6,7 +6,7 @@ import { Navbar } from "@/components/layout";
 import { FolderCard } from "@/components/ui";
 import { IPodPlayer, ClockTimerWidget } from "@/components/widgets";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useSubjects, useQuizQuestions } from "@/hooks/useFirebaseData";
 import {
@@ -30,8 +30,6 @@ import {
 } from "lucide-react";
 import { collection, query, where, getDocs, orderBy, limit, doc, updateDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
-const primaryColor = "#00568C";
 
 interface PublicQuiz {
   id: string;
@@ -105,6 +103,7 @@ function QuizCard({
   onImport: () => void;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
 
   const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
@@ -254,6 +253,7 @@ function PreviewModal({
   onPlay: () => void;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [copied, setCopied] = useState(false);
 
@@ -429,6 +429,7 @@ function ImportCodeModal({
   onImport: (code: string) => void;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [code, setCode] = useState("");
 
@@ -509,6 +510,7 @@ function ImportCodeModal({
 export default function PortalPage() {
   const { user, loading: authLoading } = useAuth();
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const { subjects } = useSubjects();
   const { addQuestions } = useQuizQuestions();
@@ -519,6 +521,7 @@ export default function PortalPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [previewQuiz, setPreviewQuiz] = useState<PublicQuiz | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
@@ -526,118 +529,114 @@ export default function PortalPage() {
   const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
   const inputBg = isDark ? "#3D3D3D" : "#FFFFFF";
 
-  // Fetch public quizzes
+  // Fetch shared quizzes from Firestore
   useEffect(() => {
     const fetchQuizzes = async () => {
+      if (!user) return;
       setLoading(true);
       try {
-        // In real app, fetch from publicQuizzes collection
-        // For now, using mock data
-        const mockQuizzes: PublicQuiz[] = [
-          {
-            id: "1",
-            title: "วิทยาศาสตร์ ม.3 บทที่ 1",
-            description: "แบบทดสอบเรื่องเซลล์และการแบ่งเซลล์",
-            subjectName: "วิทยาศาสตร์",
-            questionCount: 20,
-            difficulty: "medium",
-            createdBy: "user1",
-            createdByName: "ครูวิทย์",
-            createdAt: new Date(),
-            playCount: 1234,
-            rating: 4.5,
-            tags: ["ม.3", "เซลล์", "ชีววิทยา"],
-            shareCode: "SCI001",
-          },
-          {
-            id: "2",
-            title: "คณิตศาสตร์ สมการเชิงเส้น",
-            description: "ฝึกแก้สมการเชิงเส้นตัวแปรเดียว",
-            subjectName: "คณิตศาสตร์",
-            questionCount: 15,
-            difficulty: "easy",
-            createdBy: "user2",
-            createdByName: "ครูคณิต",
-            createdAt: new Date(),
-            playCount: 856,
-            rating: 4.8,
-            tags: ["ม.1", "สมการ", "พีชคณิต"],
-            shareCode: "MAT002",
-          },
-          {
-            id: "3",
-            title: "ภาษาอังกฤษ Grammar Test",
-            description: "Tenses, Articles, และ Prepositions",
-            subjectName: "ภาษาอังกฤษ",
-            questionCount: 25,
-            difficulty: "hard",
-            createdBy: "user3",
-            createdByName: "Teacher Joy",
-            createdAt: new Date(),
-            playCount: 2341,
-            rating: 4.2,
-            tags: ["Grammar", "Tenses", "ม.ปลาย"],
-            shareCode: "ENG003",
-          },
-          {
-            id: "4",
-            title: "สังคมศึกษา ประวัติศาสตร์ไทย",
-            description: "สมัยสุโขทัยถึงรัตนโกสินทร์",
-            subjectName: "สังคมศึกษา",
-            questionCount: 30,
-            difficulty: "mixed",
-            createdBy: "user4",
-            createdByName: "ครูประวัติ",
-            createdAt: new Date(),
-            playCount: 567,
-            rating: 4.6,
-            tags: ["ประวัติศาสตร์", "ม.ปลาย"],
-            shareCode: "SOC004",
-          },
-          {
-            id: "5",
-            title: "ฟิสิกส์ แรงและการเคลื่อนที่",
-            description: "กฎการเคลื่อนที่ของนิวตัน",
-            subjectName: "ฟิสิกส์",
-            questionCount: 18,
-            difficulty: "hard",
-            createdBy: "user5",
-            createdByName: "อ.ฟิสิกส์",
-            createdAt: new Date(),
-            playCount: 789,
-            rating: 4.3,
-            tags: ["ม.4", "กลศาสตร์", "นิวตัน"],
-            shareCode: "PHY005",
-          },
-          {
-            id: "6",
-            title: "ภาษาไทย วรรณคดี",
-            description: "วิเคราะห์วรรณคดีเรื่อง ขุนช้างขุนแผน",
-            subjectName: "ภาษาไทย",
-            questionCount: 12,
-            difficulty: "medium",
-            createdBy: "user6",
-            createdByName: "ครูภาษาไทย",
-            createdAt: new Date(),
-            playCount: 432,
-            rating: 4.7,
-            tags: ["วรรณคดี", "ม.ปลาย"],
-            shareCode: "THA006",
-          },
-        ];
-
-        setQuizzes(mockQuizzes);
+        // Fetch from sharedQuizzes collection (public shared quizzes)
+        const sharedQuizzesQuery = query(
+          collection(db, "sharedQuizzes"),
+          orderBy("createdAt", "desc"),
+          limit(50)
+        );
+        const sharedSnapshot = await getDocs(sharedQuizzesQuery);
+        
+        const fetchedQuizzes: PublicQuiz[] = [];
+        
+        for (const docSnap of sharedSnapshot.docs) {
+          const data = docSnap.data();
+          
+          // Check if quiz is not expired
+          if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
+            continue;
+          }
+          
+          fetchedQuizzes.push({
+            id: docSnap.id,
+            title: data.title || "ข้อสอบไม่มีชื่อ",
+            description: data.description || "",
+            subjectName: data.subjectName || "ทั่วไป",
+            subjectId: data.subjectId,
+            questionCount: data.questionCount || 0,
+            difficulty: data.difficulty || "mixed",
+            createdBy: data.createdBy,
+            createdByName: data.createdByName || "ไม่ระบุ",
+            createdAt: data.createdAt?.toDate() || new Date(),
+            playCount: data.playCount || 0,
+            rating: data.rating || 0,
+            tags: data.tags || [],
+            shareCode: data.shareCode,
+            questions: data.questions,
+          });
+        }
+        
+        setQuizzes(fetchedQuizzes);
       } catch (error) {
         console.error("Failed to fetch quizzes:", error);
+        // If no quizzes exist yet, show empty state
+        setQuizzes([]);
       } finally {
         setLoading(false);
       }
     };
 
-    if (user) {
-      fetchQuizzes();
-    }
+    fetchQuizzes();
   }, [user]);
+
+  // Handle import quiz by share code
+  const handleImportQuiz = async (shareCode: string) => {
+    setImportError(null);
+    try {
+      const q = query(
+        collection(db, "sharedQuizzes"),
+        where("shareCode", "==", shareCode.toUpperCase())
+      );
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        setImportError("ไม่พบข้อสอบ หรือรหัสหมดอายุแล้ว");
+        return;
+      }
+      
+      const quizDoc = snapshot.docs[0];
+      const quizData = quizDoc.data();
+      
+      // Check if expired
+      if (quizData.expiresAt && quizData.expiresAt.toDate() < new Date()) {
+        setImportError("รหัสข้อสอบนี้หมดอายุแล้ว");
+        return;
+      }
+      
+      // If quiz has questions, import them
+      if (quizData.questions && quizData.questions.length > 0) {
+        await addQuestions(quizData.questions.map((q: {question: string; correctAnswer: string; wrongAnswers: string[]; difficulty?: string; subjectId?: string; subjectName?: string; topic?: string; explanation?: string; source?: string}) => ({
+          question: q.question,
+          correctAnswer: q.correctAnswer,
+          wrongAnswers: q.wrongAnswers || [],
+          difficulty: (q.difficulty || "medium") as "easy" | "medium" | "hard",
+          subjectId: q.subjectId || "",
+          subjectName: q.subjectName || quizData.subjectName || "",
+          topic: q.topic || "",
+          explanation: q.explanation || "",
+          source: "csv" as const, // Use csv as source type for imported quizzes
+        })));
+        
+        // Increment play count
+        await updateDoc(doc(db, "sharedQuizzes", quizDoc.id), {
+          playCount: increment(1),
+        });
+        
+        alert(`นำเข้าสำเร็จ! เพิ่ม ${quizData.questions.length} คำถาม`);
+      } else {
+        setImportError("ข้อสอบนี้ไม่มีคำถาม");
+      }
+    } catch (error) {
+      console.error("Import error:", error);
+      setImportError("เกิดข้อผิดพลาดในการนำเข้า");
+    }
+  };
 
   // Filter quizzes
   const filteredQuizzes = useMemo(() => {
@@ -645,12 +644,12 @@ export default function PortalPage() {
 
     // Search filter
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+      const queryLower = searchQuery.toLowerCase();
       result = result.filter(
         (q) =>
-          q.title.toLowerCase().includes(query) ||
-          q.subjectName.toLowerCase().includes(query) ||
-          q.tags.some((t) => t.toLowerCase().includes(query))
+          q.title.toLowerCase().includes(queryLower) ||
+          q.subjectName.toLowerCase().includes(queryLower) ||
+          q.tags.some((t) => t.toLowerCase().includes(queryLower))
       );
     }
 
@@ -676,18 +675,35 @@ export default function PortalPage() {
   }, [quizzes, searchQuery, selectedCategory]);
 
   const handlePlayQuiz = async (quiz: PublicQuiz) => {
-    // Increment play count
-    // Navigate to quiz game with quiz data
-    alert(`เริ่มเล่น: ${quiz.title}\n(ฟีเจอร์กำลังพัฒนา)`);
-  };
-
-  const handleImportQuiz = async (code: string) => {
-    const quiz = quizzes.find((q) => q.shareCode === code);
-    if (quiz) {
-      alert(`นำเข้าสำเร็จ: ${quiz.title}`);
-      // TODO: Import questions to user's collection
+    // Import quiz questions and navigate to review page
+    if (quiz.questions && quiz.questions.length > 0) {
+      try {
+        await addQuestions(quiz.questions.map((q) => ({
+          question: q.question,
+          correctAnswer: q.options[q.correctAnswer],
+          wrongAnswers: q.options.filter((_, i) => i !== q.correctAnswer),
+          difficulty: "medium" as const,
+          subjectId: quiz.subjectId || "",
+          subjectName: quiz.subjectName || "",
+          topic: "",
+          explanation: q.explanation || "",
+          source: "csv" as const, // Use csv as source type for imported quizzes
+        })));
+        
+        // Increment play count
+        await updateDoc(doc(db, "sharedQuizzes", quiz.id), {
+          playCount: increment(1),
+        });
+        
+        alert(`นำเข้าสำเร็จ ${quiz.questions.length} คำถาม! ไปที่หน้าทบทวนเพื่อเล่น`);
+        window.location.href = "/review";
+      } catch (error) {
+        console.error("Play error:", error);
+        alert("เกิดข้อผิดพลาด กรุณาลองใหม่");
+      }
     } else {
-      alert("ไม่พบข้อสอบจากรหัสนี้");
+      // If no embedded questions, try to import by share code
+      await handleImportQuiz(quiz.shareCode);
     }
   };
 

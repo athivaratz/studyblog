@@ -7,7 +7,7 @@ import { FolderCard } from "@/components/ui";
 import { ClockTimerWidget, IPodPlayer, MobileUtilities, CSVImportModal, AIQuizGenerator } from "@/components/widgets";
 import { TutorialOverlay } from "@/components/tutorial";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useFlashcards, useSubjects, useInitializeUser, useReviewSessions, useQuizQuestions, useSharedQuiz } from "@/hooks/useFirebaseData";
 import {
@@ -31,9 +31,6 @@ import {
   QrCode
 } from "lucide-react";
 
-// Primary color
-const primaryColor = "#00568C";
-
 // Types
 interface GameState {
   mode: "quiz" | "memory" | "speed" | null;
@@ -50,12 +47,15 @@ interface GameState {
     back: string;
     subjectId?: string;
     subjectName?: string;
+    wrongAnswers?: string[];
+    source?: "flashcard" | "quiz";
   }>;
 }
 
 // Stats Card Component
 function StatsCard({ value, label }: { value: number | string; label: string }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
 
   const bgColor = isDark ? "#2D2D2D" : "#FFFFFF";
@@ -96,6 +96,7 @@ function ShareQuizModal({
   shareResult: { shareCode: string; shareUrl: string } | null;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [title, setTitle] = useState("");
   const [expiryDays, setExpiryDays] = useState(7);
@@ -329,6 +330,7 @@ function ShareQuizModal({
 // Main Review Dashboard
 function ReviewDashboard() {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const { userProfile } = useAuth();
   const isDark = theme === "dark";
   const { subjects } = useSubjects();
@@ -376,14 +378,49 @@ function ReviewDashboard() {
 
   // Handle share quiz
   const handleShareQuiz = async (title: string, expiryDays: number) => {
-    const totalQuestions = flashcards.length + quizQuestions.length;
+    // Combine flashcards and quiz questions into shareable format
+    const questionsToShare = [
+      // Convert flashcards to quiz format
+      ...flashcards.map(f => ({
+        question: f.question,
+        correctAnswer: f.answer,
+        wrongAnswers: [] as string[], // Flashcards don't have wrong answers
+        difficulty: "medium" as const,
+        explanation: "",
+      })),
+      // Add quiz questions
+      ...quizQuestions.map(q => ({
+        question: q.question,
+        correctAnswer: q.correctAnswer,
+        wrongAnswers: q.wrongAnswers || [],
+        difficulty: q.difficulty || "medium",
+        explanation: q.explanation || "",
+      })),
+    ];
+
+    const totalQuestions = questionsToShare.length;
+    
+    // Determine overall difficulty
+    const difficulties = quizQuestions.map(q => q.difficulty);
+    const difficulty = difficulties.length > 0
+      ? difficulties.every(d => d === difficulties[0]) 
+        ? difficulties[0] 
+        : "mixed"
+      : "medium";
+
     const result = await shareQuiz(
       userProfile?.displayName || "ผู้ใช้",
-      "flashcards", // Using flashcards as the quiz bank
+      "flashcards",
       title,
       totalQuestions,
-      expiryDays
+      expiryDays,
+      {
+        questions: questionsToShare,
+        description: `ข้อสอบจาก ${userProfile?.displayName || "ผู้ใช้"} - ${flashcards.length} flashcards, ${quizQuestions.length} คำถาม AI`,
+        difficulty: difficulty as "easy" | "medium" | "hard" | "mixed",
+      }
     );
+    
     if (result) {
       const shareUrl = `${window.location.origin}/portal?code=${result.shareCode}`;
       setShareResult({
@@ -395,14 +432,40 @@ function ReviewDashboard() {
 
   // Start a game
   const startGame = (mode: "quiz" | "memory" | "speed") => {
-    const cardsToUse = dueCards.length > 0 ? dueCards : filteredFlashcards;
-    if (cardsToUse.length < 4) {
-      alert("ต้องมีการ์ดอย่างน้อย 4 ใบเพื่อเริ่มเกม");
+    // Combine flashcards and quiz questions
+    const flashcardsAsCards = (dueCards.length > 0 ? dueCards : filteredFlashcards).map(f => ({
+      id: f.id,
+      front: f.question,
+      back: f.answer,
+      subjectId: f.subjectId,
+      wrongAnswers: [] as string[],
+      source: "flashcard" as const,
+    }));
+
+    // Filter quiz questions by subject if needed
+    const filteredQuizQuestions = selectedSubjectFilter !== "all"
+      ? quizQuestions.filter(q => q.subjectId === selectedSubjectFilter)
+      : quizQuestions;
+
+    const quizQuestionsAsCards = filteredQuizQuestions.map(q => ({
+      id: q.id,
+      front: q.question,
+      back: q.correctAnswer,
+      subjectId: q.subjectId,
+      wrongAnswers: q.wrongAnswers || [],
+      source: "quiz" as const,
+    }));
+
+    // Combine both sources
+    const allCards = [...flashcardsAsCards, ...quizQuestionsAsCards];
+
+    if (allCards.length < 4) {
+      alert("ต้องมีการ์ดหรือคำถามอย่างน้อย 4 ข้อเพื่อเริ่มเกม");
       return;
     }
 
     // Shuffle cards
-    const shuffled = [...cardsToUse].sort(() => Math.random() - 0.5);
+    const shuffled = [...allCards].sort(() => Math.random() - 0.5);
     const gameCards = shuffled.slice(0, Math.min(10, shuffled.length));
 
     setGameState({
@@ -416,9 +479,11 @@ function ReviewDashboard() {
       startTime: new Date(),
       cards: gameCards.map(c => ({
         id: c.id,
-        front: c.question,
-        back: c.answer,
+        front: c.front,
+        back: c.back,
         subjectId: c.subjectId,
+        wrongAnswers: c.wrongAnswers,
+        source: c.source,
       })),
     });
   };
@@ -454,8 +519,14 @@ function ReviewDashboard() {
   const handleAnswer = async (correct: boolean) => {
     const currentCard = gameState.cards[gameState.currentQuestion];
 
-    // Update flashcard with SM-2 algorithm (quality: 0-5, 3=correct, 0=incorrect)
-    await reviewFlashcard(currentCard.id, correct ? 4 : 1);
+    // Only update flashcard stats if it's a flashcard (not a quiz question)
+    if (currentCard.source === "flashcard" || !currentCard.source) {
+      try {
+        await reviewFlashcard(currentCard.id, correct ? 4 : 1);
+      } catch (err) {
+        console.warn("Could not update flashcard:", err);
+      }
+    }
 
     const newScore = correct ? gameState.score + (gameState.mode === "speed" ? 100 : 10) : gameState.score;
     const newCorrect = correct ? gameState.correctAnswers + 1 : gameState.correctAnswers;
@@ -946,6 +1017,7 @@ function GameScreen({
   onEnd: () => void;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [showAnswer, setShowAnswer] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -1173,6 +1245,7 @@ function GameOverScreen({
   onExit: () => void;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
 
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
@@ -1278,6 +1351,7 @@ function AddFlashcardModal({
   subjects: Array<{ id: string; name: string }>;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
 
   const [front, setFront] = useState("");

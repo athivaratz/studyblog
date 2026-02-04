@@ -3,12 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Play, Pause, RotateCcw, SkipForward, Settings, X, Check } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { createStudySession, updateDailyStats } from "@/lib/firebaseServices";
-
-const primaryColor = "#00568C";
 
 type PomodoroPhase = "work" | "break" | "long_break";
 
@@ -28,6 +26,7 @@ const defaultSettings: PomodoroSettings = {
 
 export function PomodoroTimer() {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const { user } = useAuth();
   const { t } = useLanguage();
   const isDark = theme === "dark";

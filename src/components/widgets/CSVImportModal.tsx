@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { Subject } from "@/lib/firebaseServices";
 import { parseCSVQuestions, downloadCSVTemplate, GameQuestion } from "@/lib/geminiService";
 import {
@@ -14,9 +14,6 @@ import {
   CheckCircle,
   Loader2,
 } from "lucide-react";
-
-// Primary color
-const primaryColor = "#00568C";
 
 interface CSVImportModalProps {
   isOpen: boolean;
@@ -32,6 +29,7 @@ export function CSVImportModal({
   onImport,
 }: CSVImportModalProps) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -163,37 +161,36 @@ export function CSVImportModal({
           {/* Step: Select */}
           {step === "select" && (
             <div className="space-y-4">
-              {/* Subject Selection */}
+              {/* Subject Selection - Dropdown */}
               <div>
                 <label className="font-kanit text-sm mb-2 block" style={{ color: textMuted }}>
                   เลือกวิชา
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={selectedSubject?.id || ""}
+                  onChange={(e) => {
+                    const subject = subjects.find(s => s.id === e.target.value);
+                    setSelectedSubject(subject || null);
+                  }}
+                  className="w-full p-3 rounded-xl border-2 font-kanit text-sm appearance-none cursor-pointer"
+                  style={{
+                    backgroundColor: cardBg,
+                    borderColor: selectedSubject ? primaryColor : borderColor,
+                    color: textColor,
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='${isDark ? '%23FFFFFF' : '%231A1A1A'}'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 12px center",
+                    backgroundSize: "20px",
+                    paddingRight: "40px",
+                  }}
+                >
+                  <option value="" disabled>-- เลือกวิชา --</option>
                   {subjects.map((subject) => (
-                    <motion.button
-                      key={subject.id}
-                      onClick={() => setSelectedSubject(subject)}
-                      className="p-3 rounded-xl border-2 text-left transition-all"
-                      style={{
-                        backgroundColor:
-                          selectedSubject?.id === subject.id
-                            ? primaryColor
-                            : cardBg,
-                        borderColor:
-                          selectedSubject?.id === subject.id
-                            ? primaryColor
-                            : borderColor,
-                        color:
-                          selectedSubject?.id === subject.id
-                            ? "#FFFFFF"
-                            : textColor,
-                      }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <span className="font-kanit text-sm">{subject.name}</span>
-                    </motion.button>
+                    <option key={subject.id} value={subject.id}>
+                      {subject.name}
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
 
               {/* File Upload */}

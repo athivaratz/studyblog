@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useTheme } from "@/contexts";
+import { useTheme, usePrimaryColor } from "@/contexts";
 
 interface AnalogClockProps {
   size?: number;
@@ -37,7 +37,7 @@ export function AnalogClock({
   const hourDegrees = ((hours + minutes / 60) / 12) * 360;
 
   // Theme colors
-  const primaryColor = "#00568C";
+  const primaryColor = usePrimaryColor();
   const bgColor = isDark ? "#1A1A1A" : "#FFFFFF";
   const borderColor = isDark ? "#00568C" : "#00568C";
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
