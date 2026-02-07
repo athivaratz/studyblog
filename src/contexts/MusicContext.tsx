@@ -27,9 +27,9 @@ const tracks: Track[] = [
     url: "https://streams.ilovemusic.de/iloveradio17.mp3",
   },
   {
-    title: "Study Session",
-    artist: "Focus Music",
-    url: "https://streams.ilovemusic.de/iloveradio17.mp3",
+    title: "Chillout Lounge",
+    artist: "Relaxing Music",
+    url: "https://streams.ilovemusic.de/iloveradio21.mp3",
   },
 ];
 
@@ -45,14 +45,15 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Create audio element only once
     if (typeof window !== "undefined" && !audioRef.current) {
-      audioRef.current = new Audio(tracks[currentTrack].url);
-      audioRef.current.volume = volume;
+      audioRef.current = new Audio(tracks[0].url);
+      audioRef.current.volume = 0.5;
       audioRef.current.loop = true;
     }
 
     return () => {
       // Don't cleanup audio on unmount to persist across pages
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

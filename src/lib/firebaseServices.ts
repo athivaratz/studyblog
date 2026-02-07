@@ -9,10 +9,14 @@ import {
   query,
   where,
   orderBy,
+  limit as firestoreLimit,
   serverTimestamp,
   addDoc,
+  writeBatch,
+  increment,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "./firebase";
 
 // =====================
 // Types
@@ -99,10 +103,25 @@ export interface QuizQuestion {
   topic?: string;
   explanation?: string;
   source: "ai" | "csv" | "flashcard";
+  quizSetId?: string;
+  quizSetName?: string;
   userId: string;
   timesUsed: number;
   correctRate: number; // 0-1
   createdAt: Date;
+}
+
+export interface QuizSet {
+  id: string;
+  name: string;
+  description?: string;
+  subjectId: string;
+  subjectName: string;
+  source: "ai" | "csv";
+  questionCount: number;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface QuizBank {
@@ -216,6 +235,7 @@ export interface StudySession {
 }
 
 export interface DailyStats {
+  userId: string;
   date: string; // YYYY-MM-DD
   studyMinutes: number;
   homeworkCompleted: number;
@@ -311,11 +331,7 @@ export const defaultSubjects = [
   { name: "ดนตรี", icon: "music", color: "orange", order: 5 },
 ];
 
-export async function initializeUserSubjects(_userId: string): Promise<void> {
-  // Don't create default subjects - let user add their own
-  // Just ensure the user can access the subjects collection
-  return Promise.resolve();
-}
+// initializeUserSubjects removed — no-op was unnecessary
 
 // =====================
 // Homework
@@ -594,14 +610,15 @@ export async function saveReviewSession(
   return docRef.id;
 }
 
-export async function getReviewSessions(userId: string, limit = 10): Promise<ReviewSession[]> {
+export async function getReviewSessions(userId: string, limitCount = 10): Promise<ReviewSession[]> {
   const q = query(
     collection(db, "reviewSessions"),
     where("userId", "==", userId),
-    orderBy("completedAt", "desc")
+    orderBy("completedAt", "desc"),
+    firestoreLimit(limitCount)
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.slice(0, limit).map((doc) => ({
+  return snapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
     completedAt: doc.data().completedAt?.toDate() || new Date(),
@@ -751,10 +768,19 @@ export async function initializeUserSettings(userId: string): Promise<void> {
 
 export async function initializeNewUser(userId: string): Promise<void> {
   await Promise.all([
-    initializeUserSubjects(userId),
     initializeUserStats(userId),
     initializeUserSettings(userId),
   ]);
+}
+
+// =====================
+// Profile Photo Upload
+// =====================
+
+export async function uploadProfilePhoto(userId: string, file: File): Promise<string> {
+  const storageRef = ref(storage, `profilePhotos/${userId}`);
+  await uploadBytes(storageRef, file);
+  return getDownloadURL(storageRef);
 }
 
 // =====================
@@ -804,11 +830,22 @@ export async function createQuizQuestionsBatch(
   userId: string,
   questions: Omit<QuizQuestion, "id" | "userId" | "createdAt" | "timesUsed" | "correctRate">[]
 ): Promise<string[]> {
+  const batch = writeBatch(db);
   const ids: string[] = [];
+  
   for (const question of questions) {
-    const id = await createQuizQuestion(userId, question);
-    ids.push(id);
+    const docRef = doc(collection(db, "quizQuestions"));
+    batch.set(docRef, {
+      ...question,
+      userId,
+      timesUsed: 0,
+      correctRate: 0,
+      createdAt: serverTimestamp(),
+    });
+    ids.push(docRef.id);
   }
+  
+  await batch.commit();
   return ids;
 }
 
@@ -849,6 +886,70 @@ export async function deleteQuizQuestionsBySubject(
 ): Promise<void> {
   const questions = await getQuizQuestions(userId, subjectId);
   await Promise.all(questions.map((q) => deleteQuizQuestion(q.id)));
+}
+
+// =====================
+// Quiz Sets CRUD
+// =====================
+
+export async function getQuizSets(userId: string): Promise<QuizSet[]> {
+  const q = query(
+    collection(db, "quizSets"),
+    where("userId", "==", userId),
+    orderBy("createdAt", "desc")
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => ({
+    id: d.id,
+    ...d.data(),
+    createdAt: d.data().createdAt?.toDate() || new Date(),
+    updatedAt: d.data().updatedAt?.toDate() || new Date(),
+  })) as QuizSet[];
+}
+
+export async function createQuizSet(
+  userId: string,
+  data: Omit<QuizSet, "id" | "userId" | "createdAt" | "updatedAt">
+): Promise<string> {
+  const docRef = await addDoc(collection(db, "quizSets"), {
+    ...data,
+    userId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
+
+export async function updateQuizSet(
+  setId: string,
+  data: Partial<Pick<QuizSet, "name" | "description">>
+): Promise<void> {
+  await updateDoc(doc(db, "quizSets", setId), {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteQuizSet(setId: string): Promise<void> {
+  await deleteDoc(doc(db, "quizSets", setId));
+}
+
+export async function deleteQuizSetWithQuestions(
+  userId: string,
+  setId: string
+): Promise<void> {
+  // Delete all questions in this set
+  const q = query(
+    collection(db, "quizQuestions"),
+    where("userId", "==", userId),
+    where("quizSetId", "==", setId)
+  );
+  const snapshot = await getDocs(q);
+  const batch = writeBatch(db);
+  snapshot.docs.forEach((d) => batch.delete(d.ref));
+  // Delete the set itself
+  batch.delete(doc(db, "quizSets", setId));
+  await batch.commit();
 }
 
 // =====================
@@ -1197,6 +1298,50 @@ export async function createSharedQuiz(
 
 export async function deleteSharedQuiz(sharedQuizId: string): Promise<void> {
   await deleteDoc(doc(db, "sharedQuizzes", sharedQuizId));
+}
+
+export async function getPublicQuizzes(maxCount = 50): Promise<SharedQuiz[]> {
+  const q = query(
+    collection(db, "sharedQuizzes"),
+    orderBy("createdAt", "desc"),
+    firestoreLimit(maxCount)
+  );
+  const snapshot = await getDocs(q);
+  const quizzes: SharedQuiz[] = [];
+
+  for (const docSnap of snapshot.docs) {
+    const data = docSnap.data();
+    // Skip expired quizzes
+    if (data.expiresAt && data.expiresAt.toDate() < new Date()) continue;
+
+    quizzes.push({
+      id: docSnap.id,
+      quizBankId: data.quizBankId || "",
+      shareCode: data.shareCode,
+      createdBy: data.createdBy,
+      createdByName: data.createdByName || "ไม่ระบุ",
+      title: data.title || "ข้อสอบไม่มีชื่อ",
+      description: data.description || "",
+      subjectName: data.subjectName || "ทั่วไป",
+      subjectId: data.subjectId,
+      questionCount: data.questionCount || 0,
+      difficulty: data.difficulty || "mixed",
+      tags: data.tags || [],
+      playCount: data.playCount || 0,
+      rating: data.rating || 0,
+      questions: data.questions,
+      createdAt: data.createdAt?.toDate() || new Date(),
+      expiresAt: data.expiresAt?.toDate(),
+    });
+  }
+
+  return quizzes;
+}
+
+export async function incrementQuizPlayCount(quizId: string): Promise<void> {
+  await updateDoc(doc(db, "sharedQuizzes", quizId), {
+    playCount: increment(1),
+  });
 }
 
 // =====================

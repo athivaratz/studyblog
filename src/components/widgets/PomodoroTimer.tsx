@@ -41,6 +41,7 @@ export function PomodoroTimer() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const startTimeRef = useRef<Date | null>(null);
+  const handlePhaseCompleteRef = useRef<() => void>(() => {});
 
   // Theme colors
   const bgColor = isDark ? "#2D2D2D" : "#FFFFFF";
@@ -88,14 +89,14 @@ export function PomodoroTimer() {
         }
       }, 1000);
     } else if (timeLeft === 0) {
-      handlePhaseComplete();
+      handlePhaseCompleteRef.current();
     }
 
     return () => clearInterval(interval);
-  }, [isRunning, timeLeft]);
+  }, [isRunning, timeLeft, phase]);
 
   // Handle phase completion
-  const handlePhaseComplete = async () => {
+  const handlePhaseComplete = useCallback(async () => {
     // Play notification sound
     if (audioRef.current) {
       audioRef.current.play().catch(() => {});
@@ -140,7 +141,12 @@ export function PomodoroTimer() {
     }
 
     setIsRunning(false);
-  };
+  }, [phase, completedSessions, settings, user]);
+
+  // Keep ref in sync with latest callback
+  useEffect(() => {
+    handlePhaseCompleteRef.current = handlePhaseComplete;
+  }, [handlePhaseComplete]);
 
   // Start/pause timer
   const toggleTimer = () => {

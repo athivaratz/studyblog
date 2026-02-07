@@ -3,13 +3,14 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Navbar, MobileHeader, LoadingScreen } from "@/components/layout";
-import { FolderCard } from "@/components/ui";
+import { FolderCard, ConfirmDialog } from "@/components/ui";
 import { ClockTimerWidget, IPodPlayer, MobileUtilities } from "@/components/widgets";
 import { TutorialOverlay } from "@/components/tutorial";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
-import { useTodos, useSubjects, useInitializeUser } from "@/hooks/useFirebaseData";
+import { useTodos, useSubjects } from "@/hooks/useFirebaseData";
+import { formatDueDate } from "@/lib/utils";
 import {
   Loader2,
   Plus,
@@ -53,6 +54,7 @@ function TodoFullPage() {
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   // Theme colors
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
@@ -71,23 +73,6 @@ function TodoFullPage() {
 
   const pendingFiltered = filteredTodos.filter(t => !t.completed);
   const completedFiltered = filteredTodos.filter(t => t.completed);
-
-  // Format date
-  const formatDueDate = (date?: Date) => {
-    if (!date) return null;
-    const now = new Date();
-    const diff = date.getTime() - now.getTime();
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-
-    if (days < 0) return { text: "เลยกำหนด", urgent: true };
-    if (days === 0) return { text: "วันนี้", urgent: true };
-    if (days === 1) return { text: "พรุ่งนี้", urgent: false };
-
-    const d = date.getDate();
-    const m = date.getMonth() + 1;
-    const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-    return { text: `${d} ${months[m - 1]}`, urgent: false };
-  };
 
   const categoryColors = {
     homework: isDark ? "#00568C" : "#C5E8FF",
@@ -197,7 +182,7 @@ function TodoFullPage() {
                         </div>
 
                         <motion.button
-                          onClick={() => removeTodo(todo.id)}
+                          onClick={() => setDeleteTarget(todo.id)}
                           className="p-1.5 rounded-lg opacity-50 hover:opacity-100 transition-opacity"
                           style={{ color: textMuted }}
                           whileHover={{ scale: 1.1 }}
@@ -280,7 +265,7 @@ function TodoFullPage() {
                           </div>
 
                           <motion.button
-                            onClick={() => removeTodo(todo.id)}
+                            onClick={() => setDeleteTarget(todo.id)}
                             className="p-1.5 rounded-lg opacity-50 hover:opacity-100 transition-opacity"
                             style={{ color: textMuted }}
                             whileHover={{ scale: 1.1 }}
@@ -298,6 +283,21 @@ function TodoFullPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        title="ลบรายการ"
+        message="ต้องการลบรายการนี้ใช่ไหม?"
+        confirmText="ลบ"
+        cancelText="ยกเลิก"
+        variant="danger"
+        onConfirm={() => {
+          if (deleteTarget) removeTodo(deleteTarget);
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* Add Todo Modal */}
       <AddTodoModal
@@ -545,7 +545,6 @@ function AddTodoModal({
 
 export default function TodoPage() {
   const { user, loading: authLoading } = useAuth();
-  const { loading: initLoading } = useInitializeUser();
   const [showMobileUtilities, setShowMobileUtilities] = useState(false);
 
   if (authLoading) {
@@ -554,10 +553,6 @@ export default function TodoPage() {
 
   if (!user) {
     return <LoginCard />;
-  }
-
-  if (initLoading) {
-    return <LoadingScreen />;
   }
 
   return (

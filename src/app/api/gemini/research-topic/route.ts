@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { verifyAuthToken } from "@/lib/authVerify";
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -17,6 +18,15 @@ interface ResearchTopicRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify authentication
+    const verifiedUser = await verifyAuthToken(request);
+    if (!verifiedUser) {
+      return NextResponse.json(
+        { message: "ไม่ได้รับอนุญาต กรุณาเข้าสู่ระบบ" },
+        { status: 401 }
+      );
+    }
+
     const body: ResearchTopicRequest = await request.json();
     const { subjectName, subjectId, gradeLevel, count } = body;
 

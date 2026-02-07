@@ -11,6 +11,7 @@ import {
   Flashcard,
   ReviewSession,
   QuizQuestion,
+  QuizSet,
   Tag,
   Note,
   StudyGoal,
@@ -26,6 +27,7 @@ import {
   getFlashcards,
   getReviewSessions,
   getQuizQuestions,
+  getQuizSets,
   getTags,
   getNotes,
   getStudyGoals,
@@ -38,6 +40,7 @@ import {
   createFlashcard,
   createQuizQuestion,
   createQuizQuestionsBatch,
+  createQuizSet,
   createTag,
   createNote,
   createStudyGoal,
@@ -48,7 +51,9 @@ import {
   updateTodo,
   updateScheduleItem,
   updateFlashcardAfterReview,
+  updateQuizQuestion,
   updateQuizQuestionStats,
+  updateQuizSet,
   updateTag,
   updateNote,
   updateStudyGoal,
@@ -60,6 +65,7 @@ import {
   deleteFlashcard,
   deleteQuizQuestion,
   deleteQuizQuestionsBySubject,
+  deleteQuizSetWithQuestions,
   deleteTag,
   deleteNote,
   deleteStudyGoal,
@@ -551,6 +557,7 @@ export function useInitializeUser() {
 export function useQuizQuestions(subjectId?: string) {
   const { user } = useAuth();
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [quizSets, setQuizSets] = useState<QuizSet[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -559,8 +566,12 @@ export function useQuizQuestions(subjectId?: string) {
     if (!user) return;
     setLoading(true);
     try {
-      const data = await getQuizQuestions(user.uid, subjectId);
+      const [data, sets] = await Promise.all([
+        getQuizQuestions(user.uid, subjectId),
+        getQuizSets(user.uid),
+      ]);
       setQuestions(data);
+      setQuizSets(sets);
       setError(null);
     } catch (err) {
       setError("ไม่สามารถโหลดคำถามได้");
@@ -590,6 +601,44 @@ export function useQuizQuestions(subjectId?: string) {
     await fetchQuestions();
   };
 
+  // Add a quiz set with its questions
+  const addQuizSet = async (
+    setData: { name: string; description?: string; subjectId: string; subjectName: string; source: "ai" | "csv" },
+    questionsData: Omit<QuizQuestion, "id" | "userId" | "createdAt" | "timesUsed" | "correctRate" | "quizSetId" | "quizSetName">[]
+  ) => {
+    if (!user) return;
+    const setId = await createQuizSet(user.uid, {
+      ...setData,
+      questionCount: questionsData.length,
+    });
+    await createQuizQuestionsBatch(
+      user.uid,
+      questionsData.map(q => ({
+        ...q,
+        quizSetId: setId,
+        quizSetName: setData.name,
+      }))
+    );
+    await fetchQuestions();
+    return setId;
+  };
+
+  const editQuestion = async (
+    questionId: string,
+    data: Partial<Pick<QuizQuestion, "question" | "correctAnswer" | "wrongAnswers" | "difficulty" | "topic" | "explanation">>
+  ) => {
+    await updateQuizQuestion(questionId, data);
+    await fetchQuestions();
+  };
+
+  const editQuizSet = async (
+    setId: string,
+    data: Partial<Pick<QuizSet, "name" | "description">>
+  ) => {
+    await updateQuizSet(setId, data);
+    await fetchQuestions();
+  };
+
   const updateStats = async (questionId: string, wasCorrect: boolean) => {
     await updateQuizQuestionStats(questionId, wasCorrect);
     await fetchQuestions();
@@ -606,6 +655,12 @@ export function useQuizQuestions(subjectId?: string) {
     await fetchQuestions();
   };
 
+  const removeQuizSet = async (setId: string) => {
+    if (!user) return;
+    await deleteQuizSetWithQuestions(user.uid, setId);
+    await fetchQuestions();
+  };
+
   // Get questions by difficulty
   const easyQuestions = questions.filter((q) => q.difficulty === "easy");
   const mediumQuestions = questions.filter((q) => q.difficulty === "medium");
@@ -618,6 +673,7 @@ export function useQuizQuestions(subjectId?: string) {
 
   return {
     questions,
+    quizSets,
     easyQuestions,
     mediumQuestions,
     hardQuestions,
@@ -630,9 +686,13 @@ export function useQuizQuestions(subjectId?: string) {
     error,
     addQuestion,
     addQuestions,
+    addQuizSet,
+    editQuestion,
+    editQuizSet,
     updateStats,
     removeQuestion,
     removeQuestionsBySubject,
+    removeQuizSet,
     refetch: fetchQuestions,
   };
 }

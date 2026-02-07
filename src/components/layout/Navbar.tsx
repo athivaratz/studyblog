@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { BookOpen, Brain, Calendar, User, Compass } from "lucide-react";
 import { useTheme, usePrimaryColor } from "@/contexts";
 import { useAuth } from "@/contexts/AuthContext";
+import { SyncIndicator } from "@/components/ui";
 
 /**
  * ================================================
@@ -164,10 +165,14 @@ export function Navbar() {
             {pathname === "/homework" && "การบ้าน"}
             {pathname === "/subjects" && "วิชา"}
             {pathname === "/calendar" && "ปฏิทิน"}
+            {pathname === "/portal" && "Portal"}
           </h1>
 
-          {/* Profile (click to Settings) */}
-          <ProfileButton compact />
+          {/* Profile (click to Settings) + Sync */}
+          <div className="flex items-center gap-2">
+            <SyncIndicator />
+            <ProfileButton compact />
+          </div>
         </div>
       </motion.nav>
     );
@@ -257,10 +262,13 @@ export function Navbar() {
 
         {/* 
           ================================================
-          PROFILE BUTTON - Click to go to Settings
+          PROFILE BUTTON + SYNC - Click to go to Settings
           ================================================
         */}
-        <ProfileButton />
+        <div className="flex items-center gap-2">
+          <SyncIndicator />
+          <ProfileButton />
+        </div>
       </div>
 
       {/* 

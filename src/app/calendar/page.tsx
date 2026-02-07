@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { DesktopLayout, Navbar } from "@/components/layout";
-import { RetroButton, AddScheduleModal } from "@/components/ui";
+import { RetroButton, AddScheduleModal, ConfirmDialog } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
@@ -36,6 +36,7 @@ export default function CalendarPage() {
   const isDark = theme === "dark";
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedDayForAdd, setSelectedDayForAdd] = useState(1); // Default Monday
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   // Fetch ALL schedule items (no day filter)
   const { schedule, loading: scheduleLoading, addScheduleItem, removeScheduleItem } = useSchedule();
@@ -147,9 +148,7 @@ export default function CalendarPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (confirm('ต้องการลบวิชานี้ใช่ไหม?')) {
-                                removeScheduleItem(item.id);
-                              }
+                              setDeleteTarget(item.id);
                             }}
                             className="text-red-500 p-1.5 rounded-lg transition-colors hover:opacity-70"
                           >
@@ -213,6 +212,20 @@ export default function CalendarPage() {
         onClose={() => setIsAddModalOpen(false)}
         dayOfWeek={selectedDayForAdd}
         onAdd={addScheduleItem}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteTarget !== null}
+        title="ลบวิชาในตาราง"
+        message="ต้องการลบวิชานี้ออกจากตารางเรียนใช่ไหม?"
+        confirmText="ลบ"
+        cancelText="ยกเลิก"
+        variant="danger"
+        onConfirm={() => {
+          if (deleteTarget) removeScheduleItem(deleteTarget);
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
       />
     </DesktopLayout>
   );

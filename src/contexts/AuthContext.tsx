@@ -10,6 +10,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
+import { initializeNewUser } from "@/lib/firebaseServices";
 
 interface UserProfile {
   uid: string;
@@ -26,6 +27,7 @@ interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
+  initialized: boolean;
   signInWithGoogle: () => Promise<UserCredential | null>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -37,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   // Listen to auth state changes
   useEffect(() => {
@@ -71,8 +74,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } else {
         setUserProfile(null);
+        setInitialized(false);
       }
       
+      // Initialize user data (stats, settings) once after auth
+      if (user && !initialized) {
+        try {
+          await initializeNewUser(user.uid);
+          setInitialized(true);
+        } catch (err) {
+          console.error("Error initializing user:", err);
+        }
+      }
+
       setLoading(false);
     });
 
@@ -114,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     userProfile,
     loading,
+    initialized,
     signInWithGoogle,
     signOut,
     updateProfile,
@@ -131,6 +146,7 @@ const defaultAuthContext: AuthContextType = {
   user: null,
   userProfile: null,
   loading: true,
+  initialized: false,
   signInWithGoogle: async () => null,
   signOut: async () => {},
   updateProfile: async () => {},

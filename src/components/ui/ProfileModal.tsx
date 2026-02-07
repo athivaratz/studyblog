@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { 
   User, 
   X, 
@@ -12,6 +12,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { PaperCard, RetroButton } from "@/components/ui";
+import { uploadProfilePhoto } from "@/lib/firebaseServices";
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -27,6 +28,37 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const [studentId, setStudentId] = useState(userProfile?.studentId || "");
   const [school, setSchool] = useState(userProfile?.school || "studyblog Academy");
   const [isSaving, setIsSaving] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("ไฟล์ต้องมีขนาดไม่เกิน 2MB");
+      return;
+    }
+
+    // Show preview immediately
+    const previewUrl = URL.createObjectURL(file);
+    setPhotoPreview(previewUrl);
+
+    // Upload
+    setIsUploading(true);
+    try {
+      const downloadUrl = await uploadProfilePhoto(user.uid, file);
+      await updateProfile({ photoURL: downloadUrl });
+    } catch (error) {
+      console.error("Failed to upload photo:", error);
+      setPhotoPreview(null);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Theme colors
   const backdropBg = isDark ? "rgba(0,0,0,0.7)" : "rgba(0,0,0,0.5)";
@@ -97,9 +129,9 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     className="w-24 h-24 rounded-full border-3 overflow-hidden"
                     style={{ borderColor, backgroundColor: avatarBg }}
                   >
-                    {user?.photoURL ? (
+                    {(photoPreview || user?.photoURL) ? (
                       <img
-                        src={user.photoURL}
+                        src={photoPreview || user?.photoURL || ""}
                         alt="Profile"
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
@@ -109,11 +141,24 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                         <User className="w-12 h-12" style={{ color: iconMuted }} />
                       </div>
                     )}
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-white" />
+                      </div>
+                    )}
                   </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoSelect}
+                  />
                   <motion.button
                     className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#FF6B6B] border-2 border-black rounded-full flex items-center justify-center"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
+                    onClick={() => fileInputRef.current?.click()}
                   >
                     <Camera className="w-4 h-4 text-white" />
                   </motion.button>

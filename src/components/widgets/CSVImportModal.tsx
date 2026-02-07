@@ -19,7 +19,10 @@ interface CSVImportModalProps {
   isOpen: boolean;
   onClose: () => void;
   subjects: Subject[];
-  onImport: (questions: Omit<GameQuestion, "id" | "createdAt">[]) => Promise<void>;
+  onImport: (
+    setInfo: { name: string; description: string; subjectId: string; subjectName: string },
+    questions: Omit<GameQuestion, "id" | "createdAt">[]
+  ) => Promise<void>;
 }
 
 export function CSVImportModal({
@@ -34,6 +37,8 @@ export function CSVImportModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [setName, setSetName] = useState<string>("");
+  const [setDesc, setSetDesc] = useState<string>("");
   const [csvContent, setCsvContent] = useState<string>("");
   const [fileName, setFileName] = useState<string>("");
   const [parsedQuestions, setParsedQuestions] = useState<GameQuestion[]>([]);
@@ -58,6 +63,9 @@ export function CSVImportModal({
     }
 
     setFileName(file.name);
+    // Auto-fill set name from file name
+    const nameFromFile = file.name.replace(/\.csv$/i, "").replace(/[_-]/g, " ");
+    setSetName((prev) => prev || nameFromFile);
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -70,6 +78,11 @@ export function CSVImportModal({
   const handleParse = () => {
     if (!selectedSubject) {
       setParseErrors(["กรุณาเลือกวิชาก่อน"]);
+      return;
+    }
+
+    if (!setName.trim()) {
+      setParseErrors(["กรุณาตั้งชื่อชุดข้อสอบ"]);
       return;
     }
 
@@ -93,11 +106,19 @@ export function CSVImportModal({
   };
 
   const handleImport = async () => {
-    if (parsedQuestions.length === 0) return;
+    if (parsedQuestions.length === 0 || !selectedSubject) return;
 
     setImporting(true);
     try {
-      await onImport(parsedQuestions);
+      await onImport(
+        {
+          name: setName.trim(),
+          description: setDesc.trim(),
+          subjectId: selectedSubject.id,
+          subjectName: selectedSubject.name,
+        },
+        parsedQuestions
+      );
       setStep("done");
     } catch (error) {
       console.error("Import error:", error);
@@ -109,6 +130,8 @@ export function CSVImportModal({
 
   const handleClose = () => {
     setSelectedSubject(null);
+    setSetName("");
+    setSetDesc("");
     setCsvContent("");
     setFileName("");
     setParsedQuestions([]);
@@ -193,6 +216,44 @@ export function CSVImportModal({
                 </select>
               </div>
 
+              {/* Quiz Set Name */}
+              <div>
+                <label className="font-kanit text-sm mb-2 block" style={{ color: textMuted }}>
+                  ชื่อชุดข้อสอบ
+                </label>
+                <input
+                  type="text"
+                  value={setName}
+                  onChange={(e) => setSetName(e.target.value)}
+                  placeholder="เช่น ข้อสอบภาษาไทย ม.5"
+                  className="w-full p-3 rounded-xl border-2 font-kanit text-sm focus:outline-none"
+                  style={{
+                    backgroundColor: cardBg,
+                    borderColor: setName.trim() ? primaryColor : borderColor,
+                    color: textColor,
+                  }}
+                />
+              </div>
+
+              {/* Quiz Set Description */}
+              <div>
+                <label className="font-kanit text-sm mb-2 block" style={{ color: textMuted }}>
+                  คำอธิบาย (ไม่บังคับ)
+                </label>
+                <input
+                  type="text"
+                  value={setDesc}
+                  onChange={(e) => setSetDesc(e.target.value)}
+                  placeholder="เช่น เนื้อหาเกี่ยวกับสำนวนไทย"
+                  className="w-full p-3 rounded-xl border-2 font-kanit text-sm focus:outline-none"
+                  style={{
+                    backgroundColor: cardBg,
+                    borderColor: borderColor,
+                    color: textColor,
+                  }}
+                />
+              </div>
+
               {/* File Upload */}
               <div>
                 <label className="font-kanit text-sm mb-2 block" style={{ color: textMuted }}>
@@ -253,7 +314,7 @@ export function CSVImportModal({
               {/* Parse Button */}
               <motion.button
                 onClick={handleParse}
-                disabled={!selectedSubject || !csvContent}
+                disabled={!selectedSubject || !csvContent || !setName.trim()}
                 className="w-full p-3 rounded-xl font-kanit font-bold text-white disabled:opacity-50"
                 style={{ backgroundColor: primaryColor }}
                 whileHover={{ scale: 1.02 }}
@@ -272,7 +333,15 @@ export function CSVImportModal({
                 className="p-4 rounded-xl"
                 style={{ backgroundColor: cardBg }}
               >
-                <p className="font-kanit" style={{ color: textColor }}>
+                <p className="font-kanit font-bold" style={{ color: primaryColor }}>
+                  📝 {setName}
+                </p>
+                {setDesc && (
+                  <p className="font-kanit text-xs mt-1" style={{ color: textMuted }}>
+                    {setDesc}
+                  </p>
+                )}
+                <p className="font-kanit text-sm mt-2" style={{ color: textColor }}>
                   พบ{" "}
                   <span className="font-bold" style={{ color: primaryColor }}>
                     {parsedQuestions.length}

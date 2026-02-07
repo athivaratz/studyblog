@@ -2,9 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Clock, Music } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
-
-const PRIMARY_COLOR = "#00568C";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 
 interface MobileHeaderProps {
     onUtilitiesClick: () => void;
@@ -12,10 +10,11 @@ interface MobileHeaderProps {
 
 export function MobileHeader({ onUtilitiesClick }: MobileHeaderProps) {
     const { theme, toggleTheme } = useTheme();
+    const primaryColor = usePrimaryColor();
     const isDark = theme === "dark";
 
     const headerBg = isDark ? "#252525" : "#FFFFFF";
-    const borderColor = PRIMARY_COLOR;
+    const borderColor = primaryColor;
     const buttonBg = isDark ? "#3D3D3D" : "#F0F0F0";
 
     return (
@@ -28,7 +27,7 @@ export function MobileHeader({ onUtilitiesClick }: MobileHeaderProps) {
                 id="tour-utils-mobile"
                 onClick={onUtilitiesClick}
                 className="flex items-center gap-2 px-3 py-2 text-white rounded-xl border-2"
-                style={{ backgroundColor: PRIMARY_COLOR, borderColor }}
+                style={{ backgroundColor: primaryColor, borderColor }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
             >

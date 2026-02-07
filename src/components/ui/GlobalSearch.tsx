@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, BookOpen, ClipboardList, FileText, Brain, Target, Loader2 } from "lucide-react";
 import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { globalSearch, SearchResult } from "@/lib/firebaseServices";
+import { useSubjectContext } from "@/contexts/SubjectContext";
+import { SearchResult } from "@/lib/firebaseServices";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -29,6 +30,7 @@ export function GlobalSearch() {
   const { theme } = useTheme();
   const primaryColor = usePrimaryColor();
   const { user } = useAuth();
+  const { subjects, allHomework, allFlashcards } = useSubjectContext();
   const { t } = useLanguage();
   const router = useRouter();
   const isDark = theme === "dark";
@@ -72,17 +74,56 @@ export function GlobalSearch() {
     }
   }, [isOpen]);
 
-  // Debounced search
+  // Debounced search — uses data already loaded in SubjectContext (no extra Firestore reads)
   useEffect(() => {
     if (!query.trim() || !user) {
       setResults([]);
       return;
     }
 
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       setLoading(true);
       try {
-        const searchResults = await globalSearch(user.uid, query);
+        const q = query.toLowerCase();
+        const searchResults: SearchResult[] = [];
+
+        // Search subjects (from context)
+        subjects.forEach(s => {
+          if (s.name.toLowerCase().includes(q)) {
+            searchResults.push({ type: "subject", id: s.id, title: s.name });
+          }
+        });
+
+        // Search homework (from context)
+        allHomework.forEach(h => {
+          if (h.title.toLowerCase().includes(q) || h.description?.toLowerCase().includes(q)) {
+            const subject = subjects.find(s => s.id === h.subjectId);
+            searchResults.push({
+              type: "homework",
+              id: h.id,
+              title: h.title,
+              subtitle: h.description,
+              subjectId: h.subjectId,
+              subjectName: subject?.name,
+            });
+          }
+        });
+
+        // Search flashcards (from context)
+        allFlashcards.forEach(f => {
+          if (f.question.toLowerCase().includes(q) || f.answer.toLowerCase().includes(q)) {
+            const subject = subjects.find(s => s.id === f.subjectId);
+            searchResults.push({
+              type: "flashcard",
+              id: f.id,
+              title: f.question,
+              subtitle: f.answer.substring(0, 50),
+              subjectId: f.subjectId,
+              subjectName: subject?.name,
+            });
+          }
+        });
+
         setResults(searchResults);
         setSelectedIndex(0);
       } catch (error) {
@@ -90,10 +131,10 @@ export function GlobalSearch() {
       } finally {
         setLoading(false);
       }
-    }, 300);
+    }, 150); // Faster since it's client-side only
 
     return () => clearTimeout(timer);
-  }, [query, user]);
+  }, [query, user, subjects, allHomework, allFlashcards]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback(

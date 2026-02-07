@@ -28,8 +28,12 @@ import {
   Eye,
   Trophy,
 } from "lucide-react";
-import { collection, query, where, getDocs, orderBy, limit, doc, updateDoc, increment } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import {
+  getPublicQuizzes,
+  getSharedQuizByCode,
+  incrementQuizPlayCount,
+  type SharedQuiz,
+} from "@/lib/firebaseServices";
 
 interface PublicQuiz {
   id: string;
@@ -48,12 +52,12 @@ interface PublicQuiz {
   shareCode: string;
   questions?: Array<{
     question: string;
-    options: string[];
-    correctAnswer: number;
+    correctAnswer: string;
+    wrongAnswers: string[];
+    difficulty?: "easy" | "medium" | "hard";
     explanation?: string;
   }>;
 }
-
 // Category tabs for browsing
 const categories = [
   { id: "all", label: "ทั้งหมด", icon: "📚" },
@@ -529,53 +533,41 @@ export default function PortalPage() {
   const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
   const inputBg = isDark ? "#3D3D3D" : "#FFFFFF";
 
-  // Fetch shared quizzes from Firestore
+  // Fetch shared quizzes from Firestore via service layer
   useEffect(() => {
     const fetchQuizzes = async () => {
       if (!user) return;
       setLoading(true);
       try {
-        // Fetch from sharedQuizzes collection (public shared quizzes)
-        const sharedQuizzesQuery = query(
-          collection(db, "sharedQuizzes"),
-          orderBy("createdAt", "desc"),
-          limit(50)
+        const fetchedQuizzes = await getPublicQuizzes(50);
+        // Map SharedQuiz to PublicQuiz shape
+        setQuizzes(
+          fetchedQuizzes.map((q) => ({
+            id: q.id,
+            title: q.title,
+            description: q.description,
+            subjectName: q.subjectName || "ทั่วไป",
+            subjectId: q.subjectId,
+            questionCount: q.questionCount,
+            difficulty: (q.difficulty || "mixed") as PublicQuiz["difficulty"],
+            createdBy: q.createdBy,
+            createdByName: q.createdByName || "ไม่ระบุ",
+            createdAt: q.createdAt instanceof Date ? q.createdAt : new Date(),
+            playCount: q.playCount || 0,
+            rating: q.rating || 0,
+            tags: q.tags || [],
+            shareCode: q.shareCode,
+            questions: q.questions?.map(sq => ({
+              question: sq.question,
+              correctAnswer: sq.correctAnswer,
+              wrongAnswers: sq.wrongAnswers || [],
+              difficulty: sq.difficulty,
+              explanation: sq.explanation,
+            })),
+          }))
         );
-        const sharedSnapshot = await getDocs(sharedQuizzesQuery);
-        
-        const fetchedQuizzes: PublicQuiz[] = [];
-        
-        for (const docSnap of sharedSnapshot.docs) {
-          const data = docSnap.data();
-          
-          // Check if quiz is not expired
-          if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
-            continue;
-          }
-          
-          fetchedQuizzes.push({
-            id: docSnap.id,
-            title: data.title || "ข้อสอบไม่มีชื่อ",
-            description: data.description || "",
-            subjectName: data.subjectName || "ทั่วไป",
-            subjectId: data.subjectId,
-            questionCount: data.questionCount || 0,
-            difficulty: data.difficulty || "mixed",
-            createdBy: data.createdBy,
-            createdByName: data.createdByName || "ไม่ระบุ",
-            createdAt: data.createdAt?.toDate() || new Date(),
-            playCount: data.playCount || 0,
-            rating: data.rating || 0,
-            tags: data.tags || [],
-            shareCode: data.shareCode,
-            questions: data.questions,
-          });
-        }
-        
-        setQuizzes(fetchedQuizzes);
       } catch (error) {
         console.error("Failed to fetch quizzes:", error);
-        // If no quizzes exist yet, show empty state
         setQuizzes([]);
       } finally {
         setLoading(false);
@@ -589,26 +581,13 @@ export default function PortalPage() {
   const handleImportQuiz = async (shareCode: string) => {
     setImportError(null);
     try {
-      const q = query(
-        collection(db, "sharedQuizzes"),
-        where("shareCode", "==", shareCode.toUpperCase())
-      );
-      const snapshot = await getDocs(q);
-      
-      if (snapshot.empty) {
+      const quizData = await getSharedQuizByCode(shareCode);
+
+      if (!quizData) {
         setImportError("ไม่พบข้อสอบ หรือรหัสหมดอายุแล้ว");
         return;
       }
-      
-      const quizDoc = snapshot.docs[0];
-      const quizData = quizDoc.data();
-      
-      // Check if expired
-      if (quizData.expiresAt && quizData.expiresAt.toDate() < new Date()) {
-        setImportError("รหัสข้อสอบนี้หมดอายุแล้ว");
-        return;
-      }
-      
+
       // If quiz has questions, import them
       if (quizData.questions && quizData.questions.length > 0) {
         await addQuestions(quizData.questions.map((q: {question: string; correctAnswer: string; wrongAnswers: string[]; difficulty?: string; subjectId?: string; subjectName?: string; topic?: string; explanation?: string; source?: string}) => ({
@@ -620,13 +599,11 @@ export default function PortalPage() {
           subjectName: q.subjectName || quizData.subjectName || "",
           topic: q.topic || "",
           explanation: q.explanation || "",
-          source: "csv" as const, // Use csv as source type for imported quizzes
+          source: "csv" as const,
         })));
         
-        // Increment play count
-        await updateDoc(doc(db, "sharedQuizzes", quizDoc.id), {
-          playCount: increment(1),
-        });
+        // Increment play count via service
+        await incrementQuizPlayCount(quizData.id);
         
         alert(`นำเข้าสำเร็จ! เพิ่ม ${quizData.questions.length} คำถาม`);
       } else {
@@ -680,20 +657,18 @@ export default function PortalPage() {
       try {
         await addQuestions(quiz.questions.map((q) => ({
           question: q.question,
-          correctAnswer: q.options[q.correctAnswer],
-          wrongAnswers: q.options.filter((_, i) => i !== q.correctAnswer),
-          difficulty: "medium" as const,
+          correctAnswer: q.correctAnswer,
+          wrongAnswers: q.wrongAnswers || [],
+          difficulty: (q.difficulty || "medium") as "easy" | "medium" | "hard",
           subjectId: quiz.subjectId || "",
           subjectName: quiz.subjectName || "",
           topic: "",
           explanation: q.explanation || "",
-          source: "csv" as const, // Use csv as source type for imported quizzes
+          source: "csv" as const,
         })));
         
-        // Increment play count
-        await updateDoc(doc(db, "sharedQuizzes", quiz.id), {
-          playCount: increment(1),
-        });
+        // Increment play count via service
+        await incrementQuizPlayCount(quiz.id);
         
         alert(`นำเข้าสำเร็จ ${quiz.questions.length} คำถาม! ไปที่หน้าทบทวนเพื่อเล่น`);
         window.location.href = "/review";

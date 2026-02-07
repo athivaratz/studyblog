@@ -1,4 +1,12 @@
 import { Subject, Flashcard } from "./firebaseServices";
+import { auth } from "./firebase";
+
+// Helper to get current user's auth token
+async function getAuthToken(): Promise<string | null> {
+  const user = auth.currentUser;
+  if (!user) return null;
+  return user.getIdToken();
+}
 
 // =====================
 // Types for AI-Generated Questions
@@ -59,10 +67,16 @@ export async function generateQuizQuestions(
   request: QuizGenerationRequest
 ): Promise<QuizGenerationResponse> {
   try {
+    const token = await getAuthToken();
+    if (!token) {
+      return { success: false, questions: [], error: "กรุณาเข้าสู่ระบบก่อน" };
+    }
+
     const response = await fetch("/api/gemini/generate-quiz", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         subjectName: request.subject.name,
@@ -116,10 +130,16 @@ export async function researchAndGenerateQuestions(
   count: number = 10
 ): Promise<QuizGenerationResponse> {
   try {
+    const token = await getAuthToken();
+    if (!token) {
+      return { success: false, questions: [], error: "กรุณาเข้าสู่ระบบก่อน" };
+    }
+
     const response = await fetch("/api/gemini/research-topic", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         subjectName: subject.name,
@@ -184,10 +204,32 @@ export function parseCSVQuestions(
     return { questions, errors };
   }
 
-  // Skip header row
+  // Detect column order from header row
+  const headerColumns = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+  const colMap = {
+    question: headerColumns.findIndex(h => h.includes("question") || h.includes("คำถาม")),
+    correctAnswer: headerColumns.findIndex(h => h.includes("correctanswer") || h.includes("คำตอบที่ถูก") || h.includes("correct")),
+    wrong1: headerColumns.findIndex(h => h.includes("wrong") || h.includes("คำตอบผิด")),
+    difficulty: headerColumns.findIndex(h => h.includes("difficulty") || h.includes("ระดับ")),
+    topic: headerColumns.findIndex(h => h.includes("topic") || h.includes("หัวข้อ")),
+    explanation: headerColumns.findIndex(h => h.includes("explanation") || h.includes("อธิบาย")),
+  };
+
+  // Find all wrong answer columns
+  const wrongCols: number[] = [];
+  headerColumns.forEach((h, idx) => {
+    if ((h.includes("wrong") || h.includes("คำตอบผิด")) && wrongCols.length < 3) {
+      wrongCols.push(idx);
+    }
+  });
+
+  // Fallback to positional if header detection fails
+  if (colMap.question === -1) colMap.question = 0;
+  if (colMap.correctAnswer === -1) colMap.correctAnswer = 1;
+  if (wrongCols.length === 0) { wrongCols.push(2, 3, 4); }
+
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
-    // Split by comma, but handle quoted strings
     const columns = parseCSVLine(line);
 
     if (columns.length < 5) {
@@ -195,22 +237,33 @@ export function parseCSVQuestions(
       continue;
     }
 
-    const [question, correctAnswer, wrong1, wrong2, wrong3, topic, difficulty] = columns;
+    const question = columns[colMap.question];
+    const correctAnswer = columns[colMap.correctAnswer];
+    const wrong1 = columns[wrongCols[0]];
+    const wrong2 = columns[wrongCols[1]] || "";
+    const wrong3 = columns[wrongCols[2]] || "";
+    const difficultyRaw = colMap.difficulty !== -1 ? columns[colMap.difficulty] : undefined;
+    const topicRaw = colMap.topic !== -1 ? columns[colMap.topic] : undefined;
+    const explanationRaw = colMap.explanation !== -1 ? columns[colMap.explanation] : undefined;
 
     if (!question || !correctAnswer || !wrong1 || !wrong2 || !wrong3) {
       errors.push(`บรรทัดที่ ${i + 1}: ข้อมูลไม่ครบ`);
       continue;
     }
 
+    const validDifficulties = ["easy", "medium", "hard"];
+    const diffVal = difficultyRaw?.toLowerCase().trim();
+
     questions.push({
       id: `csv-${Date.now()}-${i}`,
       question: question.trim(),
       correctAnswer: correctAnswer.trim(),
       wrongAnswers: [wrong1.trim(), wrong2.trim(), wrong3.trim()],
-      difficulty: (difficulty?.toLowerCase() as "easy" | "medium" | "hard") || "medium",
+      difficulty: (validDifficulties.includes(diffVal || "") ? diffVal as "easy" | "medium" | "hard" : "medium"),
       subjectId,
       subjectName,
-      topic: topic?.trim(),
+      topic: topicRaw?.trim(),
+      explanation: explanationRaw?.trim(),
       source: "csv",
       createdAt: new Date(),
     });
@@ -295,9 +348,9 @@ function getDifficultyFromStats(card: Flashcard): "easy" | "medium" | "hard" {
 // Sample CSV Template
 // =====================
 
-export const CSV_TEMPLATE = `คำถาม,คำตอบที่ถูกต้อง,คำตอบผิด1,คำตอบผิด2,คำตอบผิด3,หัวข้อ(optional),ระดับความยาก(optional)
-"2 + 2 เท่ากับเท่าไร?","4","3","5","6","บวกเลข","easy"
-"เมืองหลวงของประเทศไทยคืออะไร?","กรุงเทพมหานคร","เชียงใหม่","ภูเก็ต","พัทยา","ภูมิศาสตร์","medium"`;
+export const CSV_TEMPLATE = `question,correctAnswer,wrongAnswer1,wrongAnswer2,wrongAnswer3,difficulty,topic,explanation
+"2 + 2 เท่ากับเท่าไร?","4","3","5","6","easy","บวกเลข","2+2=4 เป็นการบวกพื้นฐาน"
+"เมืองหลวงของประเทศไทยคืออะไร?","กรุงเทพมหานคร","เชียงใหม่","ภูเก็ต","พัทยา","medium","ภูมิศาสตร์","กรุงเทพมหานคร เป็นเมืองหลวงของไทย"`;
 
 export function downloadCSVTemplate(): void {
   const blob = new Blob([CSV_TEMPLATE], { type: "text/csv;charset=utf-8;" });

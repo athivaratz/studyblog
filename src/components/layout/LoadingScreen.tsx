@@ -2,9 +2,7 @@
 
 import { motion } from "framer-motion";
 import { GraduationCap } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
-
-const PRIMARY_COLOR = "#00568C";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 
 interface LoadingScreenProps {
     message?: string;
@@ -12,6 +10,7 @@ interface LoadingScreenProps {
 
 export function LoadingScreen({ message = "กำลังโหลด studyblog..." }: LoadingScreenProps) {
     const { theme } = useTheme();
+    const primaryColor = usePrimaryColor();
     const isDark = theme === "dark";
 
     const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
@@ -34,10 +33,10 @@ export function LoadingScreen({ message = "กำลังโหลด studyblog
                     className="w-16 h-16 rounded-2xl flex items-center justify-center border-4"
                     style={{
                         backgroundColor: cardBg,
-                        borderColor: PRIMARY_COLOR,
+                        borderColor: primaryColor,
                     }}
                 >
-                    <GraduationCap className="w-8 h-8" style={{ color: PRIMARY_COLOR }} />
+                    <GraduationCap className="w-8 h-8" style={{ color: primaryColor }} />
                 </motion.div>
                 <p className="font-kanit" style={{ color: textMuted }}>
                     {message}
@@ -47,7 +46,7 @@ export function LoadingScreen({ message = "กำลังโหลด studyblog
                         <motion.div
                             key={i}
                             className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: PRIMARY_COLOR }}
+                            style={{ backgroundColor: primaryColor }}
                             animate={{ y: [0, -8, 0] }}
                             transition={{ duration: 0.6, delay: i * 0.1, repeat: Infinity }}
                         />

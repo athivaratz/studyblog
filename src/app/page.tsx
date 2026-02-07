@@ -3,8 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 
-// Helper to get urgent threshold (2 days from now)
-const getUrgentThreshold = () => new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+import { formatDueDate, getUrgentThreshold } from "@/lib/utils";
 import Link from "next/link";
 import { Navbar, MobileHeader, LoadingScreen } from "@/components/layout";
 import { FolderCard, ConfirmDialog } from "@/components/ui";
@@ -13,7 +12,7 @@ import { TutorialOverlay } from "@/components/tutorial";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
-import { useTodos, useInitializeUser } from "@/hooks/useFirebaseData";
+import { useTodos } from "@/hooks/useFirebaseData";
 import {
   Loader2,
   ChevronDown,
@@ -73,23 +72,6 @@ function TodoDashboard() {
   const pendingFiltered = filteredTodos.filter(t => !t.completed);
   const urgentCount = todos.filter(t => !t.completed && t.dueDate &&
     t.dueDate <= urgentThreshold).length;
-
-  // Format date
-  const formatDueDate = (date?: Date) => {
-    if (!date) return null;
-    const now = new Date();
-    const diff = date.getTime() - now.getTime();
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-
-    if (days < 0) return { text: "เลยกำหนด", urgent: true };
-    if (days === 0) return { text: "วันนี้", urgent: true };
-    if (days === 1) return { text: "พรุ่งนี้", urgent: false };
-
-    const d = date.getDate();
-    const m = date.getMonth() + 1;
-    const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-    return { text: `${d} ${months[m - 1]}`, urgent: false };
-  };
 
   const categoryColors = {
     homework: isDark ? "#00568C" : "#C5E8FF",
@@ -310,7 +292,6 @@ function TodoDashboard() {
 
 export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
-  const { loading: initLoading } = useInitializeUser();
   const [showMobileUtilities, setShowMobileUtilities] = useState(false);
 
   if (authLoading) {
@@ -319,10 +300,6 @@ export default function HomePage() {
 
   if (!user) {
     return <LoginCard />;
-  }
-
-  if (initLoading) {
-    return <LoadingScreen />;
   }
 
   return (

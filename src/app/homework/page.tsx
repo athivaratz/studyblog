@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useHomework, useSubjects } from "@/hooks/useFirebaseData";
+import { formatDueDateShort, getUrgentThreshold } from "@/lib/utils";
 import {
   ClipboardList,
   Plus,
@@ -18,9 +19,6 @@ import {
   Trash2
 } from "lucide-react";
 import { useState } from "react";
-
-// Helper to get urgent threshold (2 days from now)
-const getUrgentThreshold = () => new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
 
 export default function HomeworkPage() {
   const { user, loading: authLoading } = useAuth();
@@ -86,16 +84,7 @@ export default function HomeworkPage() {
     return <LoginCard />;
   }
 
-  const formatDueDate = (date: Date) => {
-    const now = new Date();
-    const diff = date.getTime() - now.getTime();
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-
-    if (days < 0) return "เลยกำหนด";
-    if (days === 0) return "วันนี้";
-    if (days === 1) return "พรุ่งนี้";
-    return `${days} วัน`;
-  };
+  const formatDueDate = (date: Date) => formatDueDateShort(date);
 
   const getFilteredHomework = () => {
     switch (filter) {

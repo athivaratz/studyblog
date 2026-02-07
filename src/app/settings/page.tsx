@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, usePrimaryColor, useCustomColors } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LoginCard } from "@/components/auth";
-import { useUserSettings, useInitializeUser } from "@/hooks/useFirebaseData";
+import { useUserSettings } from "@/hooks/useFirebaseData";
 import {
   User,
   Bell,
@@ -735,7 +735,6 @@ function SettingsDashboard() {
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
-  const { loading: initLoading } = useInitializeUser();
   const [showMobileUtilities, setShowMobileUtilities] = useState(false);
 
   if (authLoading) {
@@ -744,10 +743,6 @@ export default function SettingsPage() {
 
   if (!user) {
     return <LoginCard />;
-  }
-
-  if (initLoading) {
-    return <LoadingScreen />;
   }
 
   return (

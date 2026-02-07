@@ -12,7 +12,7 @@ interface ThemeContextType {
   setForceDarkMode: (force: boolean) => void;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 // External store for hydration safety
 function getServerSnapshot(): boolean {

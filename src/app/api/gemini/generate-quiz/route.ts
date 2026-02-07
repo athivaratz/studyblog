@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { verifyAuthToken } from "@/lib/authVerify";
 
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
@@ -20,6 +21,15 @@ interface GenerateQuizRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify authentication
+    const verifiedUser = await verifyAuthToken(request);
+    if (!verifiedUser) {
+      return NextResponse.json(
+        { message: "ไม่ได้รับอนุญาต กรุณาเข้าสู่ระบบ" },
+        { status: 401 }
+      );
+    }
+
     const body: GenerateQuizRequest = await request.json();
     const { subjectName, subjectId, topics, flashcardContext, count, difficulty, gradeLevel } = body;
 
@@ -76,7 +86,7 @@ ${topicInfo}${flashcardInfo}
   }
 ]`;
 
-    const model = genAI.getGenerativeModel({ model: "gemma-3-4b-it" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const result = await model.generateContent(prompt);
     const response = result.response;
     const text = response.text();

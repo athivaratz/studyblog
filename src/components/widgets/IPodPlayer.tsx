@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
 import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
 import { useMusic, useTheme, usePrimaryColor } from "@/contexts";
 

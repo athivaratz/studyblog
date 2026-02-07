@@ -9,7 +9,7 @@ import { TutorialOverlay } from "@/components/tutorial";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
-import { useSchedule, useSubjects, useInitializeUser } from "@/hooks/useFirebaseData";
+import { useSchedule, useSubjects } from "@/hooks/useFirebaseData";
 import { Schedule } from "@/lib/firebaseServices";
 import {
   Loader2,
@@ -522,7 +522,6 @@ function ScheduleFormModal({
 
 export default function SchedulePage() {
   const { user, loading: authLoading } = useAuth();
-  const { loading: initLoading } = useInitializeUser();
   const [showMobileUtilities, setShowMobileUtilities] = useState(false);
 
   if (authLoading) {
@@ -531,10 +530,6 @@ export default function SchedulePage() {
 
   if (!user) {
     return <LoginCard />;
-  }
-
-  if (initLoading) {
-    return <LoadingScreen />;
   }
 
   return (
