@@ -52,3 +52,45 @@ export function formatThaiDate(date: Date): string {
 export function getUrgentThreshold(): Date {
   return new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
 }
+
+/**
+ * Detect if the current browser is an in-app WebView (LINE, Facebook, Instagram, etc.)
+ * Google blocks OAuth sign-in from these embedded browsers (403: disallowed_useragent)
+ */
+export function isInAppBrowser(): boolean {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+
+  const ua = navigator.userAgent || navigator.vendor || "";
+
+  // Common in-app browser signatures
+  const inAppPatterns = [
+    /\bFBAN\b/i,           // Facebook App
+    /\bFBAV\b/i,           // Facebook App
+    /\bFB_IAB\b/i,         // Facebook In-App Browser
+    /\bInstagram/i,        // Instagram
+    /\bLine\//i,           // LINE
+    /\bTwitter/i,          // Twitter / X
+    /\bSnapchat/i,         // Snapchat
+    /\bWeChat/i,           // WeChat
+    /\bMicroMessenger/i,   // WeChat
+    /\bTikTok/i,           // TikTok
+    /\bBytedanceWebview/i, // TikTok/ByteDance WebView
+    /\bPinterest/i,        // Pinterest
+    /\bLinkedIn/i,         // LinkedIn
+    /\bGSA\//i,            // Google Search App (iOS)
+    /\bDaumApps/i,         // Daum (Korean app)
+    /\bKakaotalk/i,        // KakaoTalk
+    /\bNAVER/i,            // Naver
+    /\bZalo/i,             // Zalo (Vietnamese app)
+  ];
+
+  // Check for WebView indicators
+  const isWebView =
+    inAppPatterns.some((pattern) => pattern.test(ua)) ||
+    // Android WebView detection
+    (ua.includes("wv") && ua.includes("Android")) ||
+    // iOS WebView detection (no Safari in UA but has AppleWebKit)
+    (/iPhone|iPad|iPod/.test(ua) && !ua.includes("Safari") && ua.includes("AppleWebKit"));
+
+  return isWebView;
+}

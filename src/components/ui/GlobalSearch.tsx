@@ -53,6 +53,7 @@ export function GlobalSearch() {
 
   // Keyboard shortcut (Cmd+K / Ctrl+K)
   useEffect(() => {
+    if (!user) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
@@ -65,7 +66,7 @@ export function GlobalSearch() {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [user]);
 
   // Focus input when opened
   useEffect(() => {
@@ -184,32 +185,24 @@ export function GlobalSearch() {
     goal: t("search.goal"),
   };
 
+  // Don't render search on login / unauthenticated pages
+  if (!user) return null;
+
   return (
     <>
-      {/* Search Button */}
+      {/* Floating Search Button - fixed position */}
       <motion.button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all"
+        className="fixed bottom-6 right-4 lg:bottom-6 lg:right-6 z-40 flex items-center justify-center w-12 h-12 rounded-full border-2 shadow-lg"
         style={{
           borderColor,
           backgroundColor: bgColor,
         }}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        aria-label="ค้นหา"
       >
-        <Search className="w-4 h-4" style={{ color: textMuted }} />
-        <span className="font-kanit text-sm hidden sm:inline" style={{ color: textMuted }}>
-          {t("search.placeholder")}
-        </span>
-        <kbd
-          className="hidden md:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono"
-          style={{
-            backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-            color: textMuted,
-          }}
-        >
-          ⌘K
-        </kbd>
+        <Search className="w-5 h-5" style={{ color: primaryColor }} />
       </motion.button>
 
       {/* Search Modal */}

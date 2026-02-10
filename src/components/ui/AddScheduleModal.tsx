@@ -261,7 +261,7 @@ export function AddScheduleModal({ isOpen, onClose, dayOfWeek, onAdd }: AddSched
                       type="time"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
-                      className="w-full p-2 rounded-lg border-2 font-kanit focus:outline-none focus:border-[#FF6B6B]"
+                      className="w-full p-2 rounded-lg border-2 font-kanit focus:outline-none focus:border-[var(--primary)]"
                       style={{ backgroundColor: inputBg, borderColor: inputBorder, color: textColor }}
                     />
                   </div>
@@ -273,7 +273,7 @@ export function AddScheduleModal({ isOpen, onClose, dayOfWeek, onAdd }: AddSched
                       type="time"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
-                      className="w-full p-2 rounded-lg border-2 font-kanit focus:outline-none focus:border-[#FF6B6B]"
+                      className="w-full p-2 rounded-lg border-2 font-kanit focus:outline-none focus:border-[var(--primary)]"
                       style={{ backgroundColor: inputBg, borderColor: inputBorder, color: textColor }}
                     />
                   </div>
@@ -289,7 +289,7 @@ export function AddScheduleModal({ isOpen, onClose, dayOfWeek, onAdd }: AddSched
                     value={room}
                     onChange={(e) => setRoom(e.target.value)}
                     placeholder="ระบุห้องเรียน (ถ้ามี)"
-                    className="w-full p-2 rounded-lg border-2 font-kanit focus:outline-none focus:border-[#FF6B6B]"
+                    className="w-full p-2 rounded-lg border-2 font-kanit focus:outline-none focus:border-[var(--primary)]"
                     style={{ backgroundColor: inputBg, borderColor: inputBorder, color: textColor }}
                   />
                 </div>

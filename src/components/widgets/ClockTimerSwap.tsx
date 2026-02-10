@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { Play, Pause, RotateCcw, Clock, Timer } from "lucide-react";
+import { usePrimaryColor } from "@/contexts";
 
 interface ClockTimerSwapProps {
   className?: string;
@@ -52,6 +53,7 @@ export function ClockTimerSwap({ className = "" }: ClockTimerSwapProps) {
 // Clock Card Component
 // =====================
 function ClockCard({ onSwap }: { onSwap: () => void }) {
+  const primaryColor = usePrimaryColor();
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -70,10 +72,11 @@ function ClockCard({ onSwap }: { onSwap: () => void }) {
     <motion.div
       onClick={onSwap}
       className="
-        bg-[#1A1A1A] border-3 border-black rounded-2xl
+        bg-[#2D2D2D] border-3 rounded-2xl
         p-5 w-[200px] cursor-pointer select-none
         shadow-hard
       "
+      style={{ borderColor: primaryColor }}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
     >
@@ -94,7 +97,7 @@ function ClockCard({ onSwap }: { onSwap: () => void }) {
       </div>
 
       {/* Digital display */}
-      <div className="bg-[#0D2818] border-2 border-black rounded-lg p-3 mb-3">
+      <div className="bg-[#0D2818] border-2 rounded-lg p-3 mb-3" style={{ borderColor: 'rgba(255,255,255,0.2)' }}>
         <div className="flex items-center justify-center gap-1">
           <span className="font-mono text-3xl text-[#39FF14] font-bold tracking-wider">
             {hours}
@@ -130,6 +133,7 @@ function ClockCard({ onSwap }: { onSwap: () => void }) {
 // Timer Card Component
 // =====================
 function TimerCard({ onSwap }: { onSwap: () => void }) {
+  const primaryColor = usePrimaryColor();
   const [mode, setMode] = useState<TimerMode>("pomodoro");
   const [isRunning, setIsRunning] = useState(false);
   const [time, setTime] = useState(25 * 60);
@@ -218,17 +222,18 @@ function TimerCard({ onSwap }: { onSwap: () => void }) {
     <motion.div
       onClick={onSwap}
       className="
-        bg-[#1A1A1A] border-3 border-black rounded-2xl
+        bg-[#2D2D2D] border-3 rounded-2xl
         p-4 w-[200px] cursor-pointer select-none
         shadow-hard
       "
+      style={{ borderColor: primaryColor }}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
     >
       {/* Mode indicator */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Timer className={`w-4 h-4 ${mode === "pomodoro" ? "text-[#FF6B6B]" : "text-[#4ECDC4]"}`} />
+          <Timer className={`w-4 h-4`} style={{ color: mode === "pomodoro" ? primaryColor : "#4ECDC4" }} />
           <span className="text-xs text-white/50 font-kanit">จับเวลา</span>
         </div>
         <motion.div
@@ -247,8 +252,9 @@ function TimerCard({ onSwap }: { onSwap: () => void }) {
           onClick={(e) => handleModeChange("pomodoro", e)}
           className={`
             flex-1 px-2 py-1 rounded-md text-xs font-kanit transition-colors cursor-pointer
-            ${mode === "pomodoro" ? "bg-[#FF6B6B] text-white" : "bg-white/10 text-white/60 hover:bg-white/20"}
+            ${mode === "pomodoro" ? "text-white" : "bg-white/10 text-white/60 hover:bg-white/20"}
           `}
+          style={mode === "pomodoro" ? { backgroundColor: primaryColor } : undefined}
         >
           🍅 โพโมโดโร
         </button>
@@ -267,22 +273,21 @@ function TimerCard({ onSwap }: { onSwap: () => void }) {
       <div className="relative mb-2">
         {mode === "pomodoro" && (
           <div
-            className="absolute bottom-0 left-0 h-1 bg-[#FF6B6B] rounded-full transition-all duration-1000"
-            style={{ width: `${progress}%` }}
+            className="absolute bottom-0 left-0 h-1 rounded-full transition-all duration-1000"
+            style={{ width: `${progress}%`, backgroundColor: primaryColor }}
           />
         )}
         <div
           className={`
             ${mode === "pomodoro" ? "bg-[#2A1515]" : "bg-[#152A28]"}
-            border-2 border-black rounded-lg p-3
+            border-2 rounded-lg p-3
           `}
+          style={{ borderColor: 'rgba(255,255,255,0.2)' }}
         >
           <div className="flex items-center justify-center">
             <span
-              className={`
-                font-mono text-3xl font-bold tracking-wider
-                ${mode === "pomodoro" ? "text-[#FF6B6B]" : "text-[#4ECDC4]"}
-              `}
+              className="font-mono text-3xl font-bold tracking-wider"
+              style={{ color: mode === "pomodoro" ? primaryColor : "#4ECDC4" }}
             >
               {formatTime(time)}
             </span>
@@ -300,10 +305,11 @@ function TimerCard({ onSwap }: { onSwap: () => void }) {
               className={`
                 flex-1 py-1 rounded text-xs font-mono transition-colors cursor-pointer
                 ${selectedPreset === index
-                  ? "bg-[#FF6B6B] text-white"
+                  ? "text-white"
                   : "bg-white/10 text-white/60 hover:bg-white/20"
                 }
               `}
+              style={selectedPreset === index ? { backgroundColor: primaryColor } : undefined}
             >
               {preset.label}
             </button>
@@ -332,14 +338,18 @@ function TimerCard({ onSwap }: { onSwap: () => void }) {
           className={`
             w-12 h-12 rounded-full
             flex items-center justify-center
-            border-2 border-black shadow-hard-sm cursor-pointer
+            border-2 shadow-hard-sm cursor-pointer
             ${isRunning
               ? "bg-[#FFE066]"
               : mode === "pomodoro"
-              ? "bg-[#FF6B6B]"
+              ? ""
               : "bg-[#4ECDC4]"
             }
           `}
+          style={{
+            borderColor: 'rgba(255,255,255,0.3)',
+            ...(!isRunning && mode === "pomodoro" ? { backgroundColor: primaryColor } : {})
+          }}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
         >

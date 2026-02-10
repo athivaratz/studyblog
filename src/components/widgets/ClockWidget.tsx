@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { useTheme } from "@/contexts";
+import { useTheme, usePrimaryColor } from "@/contexts";
 
 interface ClockWidgetProps {
   className?: string;
@@ -10,6 +10,7 @@ interface ClockWidgetProps {
 
 export function ClockWidget({ className = "" }: ClockWidgetProps) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [time, setTime] = useState(new Date());
 
@@ -30,8 +31,8 @@ export function ClockWidget({ className = "" }: ClockWidgetProps) {
 
   // Theme-aware colors
   const bgColor = isDark ? "#1A1A1A" : "#2D2D2D";
-  const borderColor = isDark ? "#606060" : "#1A1A1A";
-  const shadowColor = isDark ? "#404040" : "#1A1A1A";
+  const borderColor = isDark ? "#606060" : primaryColor;
+  const shadowColor = isDark ? "#404040" : primaryColor;
   const screenBg = isDark ? "#0D2818" : "#0A1F14";
 
   return (

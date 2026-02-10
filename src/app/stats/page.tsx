@@ -207,8 +207,8 @@ export default function StatsPage() {
                     className="rounded-2xl border-2 p-4"
                     style={{
                       backgroundColor: cardBg,
-                      borderColor: "#FF6B6B",
-                      boxShadow: `4px 4px 0px #FF6B6B`,
+                      borderColor: primaryColor,
+                      boxShadow: `4px 4px 0px ${primaryColor}`,
                     }}
                     whileHover={{ scale: 1.02 }}
                   >
@@ -216,9 +216,9 @@ export default function StatsPage() {
                       className="w-10 h-10 rounded-xl flex items-center justify-center mb-2"
                       style={{ backgroundColor: "#FFD6E0" }}
                     >
-                      <Flame className="w-5 h-5" style={{ color: "#FF6B6B" }} />
+                      <Flame className="w-5 h-5" style={{ color: primaryColor }} />
                     </div>
-                    <p className="font-felipa text-2xl" style={{ color: "#FF6B6B" }}>
+                    <p className="font-felipa text-2xl" style={{ color: primaryColor }}>
                       {streak} {t("common.days")}
                     </p>
                     <p className="font-kanit text-xs" style={{ color: textMuted }}>

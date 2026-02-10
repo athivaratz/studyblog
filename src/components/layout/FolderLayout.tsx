@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, ReactNode } from "react";
 import { FolderTab } from "../ui/FolderTab";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 
 interface Tab {
   id: string;
@@ -21,17 +21,18 @@ interface FolderLayoutProps {
 export function FolderLayout({ tabs, defaultTab }: FolderLayoutProps) {
   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id);
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
 
   const activeContent = tabs.find((tab) => tab.id === activeTab)?.content;
 
   // Theme colors
   const containerBg = isDark ? "#2D2D2D" : "#FFFEF9";
-  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#000000";
-  const boxShadow = isDark ? "none" : "6px 6px 0 #1A1A1A";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : primaryColor;
+  const boxShadow = isDark ? "none" : `6px 6px 0 ${primaryColor}`;
   const textureOpacity = isDark ? 0.2 : 1;
   const redLineColor = isDark ? "rgba(239, 68, 68, 0.2)" : "rgba(252, 165, 165, 0.4)";
-  const holeBg = isDark ? "#1A1A1A" : "#F5E6D3";
+  const holeBg = isDark ? "#1A1A1A" : "#ECECEC";
   const holeBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.2)";
 
   return (

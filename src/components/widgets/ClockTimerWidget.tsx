@@ -241,7 +241,7 @@ export function ClockTimerWidget({ size = 150, className = "", id }: ClockTimerW
                 style={{
                   width: 2,
                   height: size * 0.38,
-                  backgroundColor: "#FF6B6B",
+                  backgroundColor: primaryColor,
                   left: "50%",
                   bottom: "50%",
                   marginLeft: -1,
@@ -288,8 +288,8 @@ export function ClockTimerWidget({ size = 150, className = "", id }: ClockTimerW
                 width: size,
                 height: size,
                 backgroundColor: bgColor,
-                borderColor: mode === "pomodoro" ? "#FF6B6B" : "#4ECDC4",
-                boxShadow: `0 4px 20px ${mode === "pomodoro" ? "rgba(255,107,107,0.3)" : "rgba(78,205,196,0.3)"}`,
+                borderColor: mode === "pomodoro" ? primaryColor : "#4ECDC4",
+                boxShadow: `0 4px 20px ${mode === "pomodoro" ? `${primaryColor}4D` : "rgba(78,205,196,0.3)"}`,
               }}
             >
               {/* Progress ring for pomodoro */}
@@ -304,7 +304,7 @@ export function ClockTimerWidget({ size = 150, className = "", id }: ClockTimerW
                     cy={size / 2}
                     r={size / 2 - 8}
                     fill="none"
-                    stroke={isDark ? "rgba(255,107,107,0.2)" : "rgba(255,107,107,0.1)"}
+                    stroke={isDark ? `${primaryColor}33` : `${primaryColor}1A`}
                     strokeWidth="4"
                   />
                   <circle
@@ -312,7 +312,7 @@ export function ClockTimerWidget({ size = 150, className = "", id }: ClockTimerW
                     cy={size / 2}
                     r={size / 2 - 8}
                     fill="none"
-                    stroke="#FF6B6B"
+                    stroke={primaryColor}
                     strokeWidth="4"
                     strokeDasharray={2 * Math.PI * (size / 2 - 8)}
                     strokeDashoffset={2 * Math.PI * (size / 2 - 8) * (1 - timerProgress / 100)}
@@ -324,7 +324,7 @@ export function ClockTimerWidget({ size = 150, className = "", id }: ClockTimerW
               <div className="text-center z-10">
                 <p
                   className="font-mono text-3xl font-bold"
-                  style={{ color: mode === "pomodoro" ? "#FF6B6B" : "#4ECDC4" }}
+                  style={{ color: mode === "pomodoro" ? primaryColor : "#4ECDC4" }}
                 >
                   {formatTime(mode === "pomodoro" ? timerSeconds : stopwatchSeconds)}
                 </p>
@@ -343,9 +343,9 @@ export function ClockTimerWidget({ size = 150, className = "", id }: ClockTimerW
                     onClick={() => handlePresetChange(index)}
                     className="px-3 py-1 rounded-lg font-mono text-xs border-2"
                     style={{
-                      backgroundColor: selectedPreset === index ? "#FF6B6B" : "transparent",
-                      borderColor: "#FF6B6B",
-                      color: selectedPreset === index ? "#FFFFFF" : "#FF6B6B",
+                      backgroundColor: selectedPreset === index ? primaryColor : "transparent",
+                      borderColor: primaryColor,
+                      color: selectedPreset === index ? "#FFFFFF" : primaryColor,
                     }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -373,7 +373,7 @@ export function ClockTimerWidget({ size = 150, className = "", id }: ClockTimerW
                 style={{
                   backgroundColor: (mode === "pomodoro" ? timerRunning : stopwatchRunning)
                     ? "#FFE066"
-                    : mode === "pomodoro" ? "#FF6B6B" : "#4ECDC4",
+                    : mode === "pomodoro" ? primaryColor : "#4ECDC4",
                   color: (mode === "pomodoro" ? timerRunning : stopwatchRunning) ? "#1A1A1A" : "#FFFFFF",
                 }}
                 whileHover={{ scale: 1.1 }}

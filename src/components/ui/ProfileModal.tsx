@@ -155,7 +155,8 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     onChange={handlePhotoSelect}
                   />
                   <motion.button
-                    className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#FF6B6B] border-2 border-black rounded-full flex items-center justify-center"
+                    className="absolute -bottom-1 -right-1 w-8 h-8 bg-[var(--primary)] border-2 rounded-full flex items-center justify-center"
+                    style={{ borderColor: 'var(--primary-dark, rgba(0,0,0,0.3))' }}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => fileInputRef.current?.click()}
@@ -179,7 +180,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="ชื่อของคุณ"
-                    className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+                    className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                     style={{ borderColor, backgroundColor: inputBg, color: textColor }}
                   />
                 </div>
@@ -193,7 +194,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     value={studentId}
                     onChange={(e) => setStudentId(e.target.value)}
                     placeholder="เช่น 12345"
-                    className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+                    className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                     style={{ borderColor, backgroundColor: inputBg, color: textColor }}
                   />
                 </div>
@@ -207,7 +208,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                     value={school}
                     onChange={(e) => setSchool(e.target.value)}
                     placeholder="ชื่อสถานศึกษา"
-                    className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+                    className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                     style={{ borderColor, backgroundColor: inputBg, color: textColor }}
                   />
                 </div>

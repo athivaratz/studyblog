@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { DesktopLayout, Navbar } from "@/components/layout";
 import { RetroButton, AddScheduleModal, ConfirmDialog } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useSchedule, useSubjects } from "@/hooks/useFirebaseData";
 import { Schedule } from "@/lib/firebaseServices";
@@ -33,6 +33,7 @@ const bgColors: Record<string, string> = {
 export default function CalendarPage() {
   const { user, loading: authLoading } = useAuth();
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedDayForAdd, setSelectedDayForAdd] = useState(1); // Default Monday
@@ -42,12 +43,12 @@ export default function CalendarPage() {
   const { schedule, loading: scheduleLoading, addScheduleItem, removeScheduleItem } = useSchedule();
   const { subjects } = useSubjects();
 
-  const pageBg = isDark ? "#1A1A1A" : "#FFF8E7";
+  const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
   const textSubtle = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
   const textFaint = isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)";
-  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#1A1A1A";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : primaryColor;
   const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
   const emptyBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
   const emptyBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
@@ -73,7 +74,7 @@ export default function CalendarPage() {
         className="min-h-screen flex items-center justify-center"
         style={{ backgroundColor: pageBg }}
       >
-        <Loader2 className="w-8 h-8 animate-spin text-[#FF6B6B]" />
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: primaryColor }} />
       </div>
     );
   }
@@ -97,14 +98,14 @@ export default function CalendarPage() {
 
         <div className="flex items-center justify-between px-2">
           <h2 className="font-felipa text-3xl flex items-center gap-2" style={{ color: textColor }}>
-            <CalendarIcon className="w-7 h-7 text-[#FF6B6B]" />
+            <CalendarIcon className="w-7 h-7" style={{ color: primaryColor }} />
             ตารางเรียน
           </h2>
         </div>
 
         {scheduleLoading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="w-10 h-10 animate-spin text-[#FF6B6B]" />
+            <Loader2 className="w-10 h-10 animate-spin" style={{ color: primaryColor }} />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
@@ -122,7 +123,7 @@ export default function CalendarPage() {
                   style={{
                     backgroundColor: dayColors[dayIndex],
                     borderColor: borderColor,
-                    boxShadow: isDark ? "none" : "3px 3px 0px #1A1A1A"
+                    boxShadow: isDark ? "none" : `3px 3px 0px ${primaryColor}`
                   }}
                 >
                   <span className="font-kanit font-bold text-lg" style={{ color: "rgba(0,0,0,0.8)" }}>

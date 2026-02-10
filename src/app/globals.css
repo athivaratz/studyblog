@@ -16,13 +16,13 @@
   --pastel-green: #D4F5D4;
   --pastel-purple: #E8D5F2;
   --pastel-orange: #FFE4C9;
-  --pastel-cream: #FFF8E7;
+  --pastel-cream: #F5F5F5;
   
   /* Base colors */
-  --background: #F5E6D3;
+  --background: #F5F5F5;
   --foreground: #2D2D2D;
   --paper-white: #FFFEF9;
-  --border-black: #1A1A1A;
+  --border-black: var(--primary); /* mapped to primary color */
   
   /* Accent colors */
   --accent-red: #FF6B6B;
@@ -144,7 +144,7 @@
   --paper-white: #252525;
   
   /* Neo-brutalism dark border - Use colored borders for more pop */
-  --border-black: #505050;
+  --border-black: var(--primary-dark, #505050);
   --border-highlight: #707070;
   
   /* Accent colors - Brighter in dark mode */

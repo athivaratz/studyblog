@@ -6,15 +6,15 @@ import { Home, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--paper-white)] dark:bg-[#2D2D2D] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5] dark:bg-[#2D2D2D] p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="text-center max-w-md w-full rounded-2xl p-8 bg-white dark:bg-[#353535]"
         style={{
-          border: "2px solid var(--border-black)",
-          boxShadow: "6px 6px 0px var(--border-black)",
+          border: "2px solid var(--primary)",
+          boxShadow: "6px 6px 0px var(--primary)",
         }}
       >
         {/* Fun 404 icon */}
@@ -26,11 +26,11 @@ export default function NotFound() {
           📂
         </motion.div>
 
-        <h1 className="font-felipa text-6xl text-[var(--border-black)] dark:text-white mb-2">
+        <h1 className="font-felipa text-6xl text-[var(--primary)] dark:text-white mb-2">
           404
         </h1>
 
-        <h2 className="font-kanit text-xl text-[var(--border-black)] dark:text-white mb-2">
+        <h2 className="font-kanit text-xl text-[var(--primary)] dark:text-white mb-2">
           ไม่พบหน้านี้
         </h2>
 
@@ -45,10 +45,10 @@ export default function NotFound() {
               style={{
                 backgroundColor: "var(--pastel-pink, #FFD6E0)",
                 color: "#1A1A1A",
-                border: "2px solid var(--border-black)",
-                boxShadow: "3px 3px 0px var(--border-black)",
+                border: "2px solid var(--primary)",
+                boxShadow: "3px 3px 0px var(--primary)",
               }}
-              whileHover={{ scale: 1.05, boxShadow: "5px 5px 0px var(--border-black)" }}
+              whileHover={{ scale: 1.05, boxShadow: "5px 5px 0px var(--primary)" }}
               whileTap={{ scale: 0.95 }}
             >
               <Home className="w-4 h-4" />
@@ -62,10 +62,10 @@ export default function NotFound() {
             style={{
               backgroundColor: "var(--pastel-yellow, #FFF3B0)",
               color: "#1A1A1A",
-              border: "2px solid var(--border-black)",
-              boxShadow: "3px 3px 0px var(--border-black)",
+              border: "2px solid var(--primary)",
+              boxShadow: "3px 3px 0px var(--primary)",
             }}
-            whileHover={{ scale: 1.05, boxShadow: "5px 5px 0px var(--border-black)" }}
+            whileHover={{ scale: 1.05, boxShadow: "5px 5px 0px var(--primary)" }}
             whileTap={{ scale: 0.95 }}
           >
             <ArrowLeft className="w-4 h-4" />

@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX } from "lucide-react";
 import { useMusic } from "@/contexts/MusicContext";
-import { useTheme } from "@/contexts";
+import { useTheme, usePrimaryColor } from "@/contexts";
 
 interface MusicPlayerProps {
   className?: string;
@@ -11,6 +11,7 @@ interface MusicPlayerProps {
 
 export function MusicPlayer({ className = "" }: MusicPlayerProps) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const { 
     isPlaying, 
@@ -30,15 +31,15 @@ export function MusicPlayer({ className = "" }: MusicPlayerProps) {
   };
 
   // Theme-aware styling
-  const borderColor = isDark ? "#606060" : "#1A1A1A";
-  const shadowColor = isDark ? "#404040" : "#1A1A1A";
+  const borderColor = isDark ? "#606060" : primaryColor;
+  const shadowColor = isDark ? "#404040" : primaryColor;
 
   return (
     <motion.div
       className={`rounded-2xl p-4 w-[280px] ${className}`}
       style={{
         background: isDark 
-          ? "linear-gradient(to bottom right, #1A1A1A, #2D2D2D)" 
+          ? "linear-gradient(to bottom right, #252525, #2D2D2D)" 
           : "linear-gradient(to bottom right, #2D2D2D, #3D3D3D)",
         border: `3px solid ${borderColor}`,
         boxShadow: `4px 4px 0px ${shadowColor}`,
@@ -89,7 +90,7 @@ export function MusicPlayer({ className = "" }: MusicPlayerProps) {
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                 <motion.div
                   key={i}
-                  className={`w-2 rounded-full ${isDark ? 'bg-[#FF8A8A]' : 'bg-[#FF6B6B]'}`}
+                  className={`w-2 rounded-full ${isDark ? 'bg-[#8AB8D6]' : 'bg-[#00568C]'}`}
                   animate={{
                     height: [4, 10 + (i % 4) * 5, 4],
                   }}
@@ -114,7 +115,7 @@ export function MusicPlayer({ className = "" }: MusicPlayerProps) {
         <motion.button 
           className="w-10 h-10 rounded-full flex items-center justify-center"
           style={{
-            backgroundColor: isDark ? "#4A4530" : "#FFF3B0",
+            backgroundColor: isDark ? "#4A4530" : "#C5E8FF",
             border: `2px solid ${borderColor}`,
             boxShadow: `2px 2px 0px ${shadowColor}`,
           }}
@@ -146,7 +147,7 @@ export function MusicPlayer({ className = "" }: MusicPlayerProps) {
         <motion.button 
           className="w-10 h-10 rounded-full flex items-center justify-center"
           style={{
-            backgroundColor: isDark ? "#4A4530" : "#FFF3B0",
+            backgroundColor: isDark ? "#4A4530" : "#C5E8FF",
             border: `2px solid ${borderColor}`,
             boxShadow: `2px 2px 0px ${shadowColor}`,
           }}
@@ -184,7 +185,7 @@ export function MusicPlayer({ className = "" }: MusicPlayerProps) {
             [&::-webkit-slider-thumb]:rounded-full
             [&::-webkit-slider-thumb]:bg-[#C5E8FF]
             [&::-webkit-slider-thumb]:border
-            [&::-webkit-slider-thumb]:border-black
+            [&::-webkit-slider-thumb]:border-white/30
           "
         />
       </div>

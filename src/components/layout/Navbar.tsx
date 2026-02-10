@@ -139,7 +139,7 @@ export function Navbar() {
             <motion.div
               className="w-10 h-10 xl:w-12 xl:h-12 rounded-full flex items-center justify-center cursor-pointer"
               style={{
-                backgroundColor: "#FF6B6B",
+                backgroundColor: primaryColor,
                 border: `2px solid ${borderColor}`,
                 boxShadow: `2px 2px 0px ${shadowColor}`,
               }}
@@ -283,6 +283,7 @@ export function Navbar() {
         {navItems.map((item) => (
           <Link key={item.href} href={item.href}>
             <motion.div
+              id={item.id ? `${item.id}-mobile` : undefined}
               className="flex flex-col items-center gap-0.5 p-1 rounded-xl cursor-pointer"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}

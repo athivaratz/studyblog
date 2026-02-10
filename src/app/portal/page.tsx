@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Navbar } from "@/components/layout";
 import { FolderCard } from "@/components/ui";
@@ -427,10 +428,14 @@ function ImportCodeModal({
   isOpen,
   onClose,
   onImport,
+  error,
+  loading: importLoading,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onImport: (code: string) => void;
+  error?: string | null;
+  loading?: boolean;
 }) {
   const { theme } = useTheme();
   const primaryColor = usePrimaryColor();
@@ -474,18 +479,25 @@ function ImportCodeModal({
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           placeholder="เช่น ABC123"
           maxLength={6}
-          className="w-full px-4 py-3 rounded-xl border-2 font-mono text-xl text-center uppercase tracking-widest focus:outline-none"
+          disabled={importLoading}
+          className="w-full px-4 py-3 rounded-xl border-2 font-mono text-xl text-center uppercase tracking-widest focus:outline-none disabled:opacity-50"
           style={{
             backgroundColor: inputBg,
-            borderColor: primaryColor,
+            borderColor: error ? "#EF4444" : primaryColor,
             color: textColor,
           }}
         />
 
+        {/* Error message */}
+        {error && (
+          <p className="font-kanit text-sm text-red-500 mt-2">{error}</p>
+        )}
+
         <div className="flex gap-3 mt-6">
           <motion.button
             onClick={onClose}
-            className="flex-1 py-2 rounded-xl border-2 font-kanit"
+            disabled={importLoading}
+            className="flex-1 py-2 rounded-xl border-2 font-kanit disabled:opacity-50"
             style={{ borderColor: primaryColor, color: textColor }}
             whileTap={{ scale: 0.98 }}
           >
@@ -493,17 +505,23 @@ function ImportCodeModal({
           </motion.button>
           <motion.button
             onClick={() => {
-              if (code.length === 6) {
+              if (code.length === 6 && !importLoading) {
                 onImport(code);
-                onClose();
               }
             }}
-            disabled={code.length !== 6}
-            className="flex-1 py-2 rounded-xl font-kanit text-white disabled:opacity-50"
+            disabled={code.length !== 6 || importLoading}
+            className="flex-1 py-2 rounded-xl font-kanit text-white disabled:opacity-50 flex items-center justify-center gap-2"
             style={{ backgroundColor: primaryColor }}
             whileTap={{ scale: 0.98 }}
           >
-            นำเข้า
+            {importLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                กำลังนำเข้า...
+              </>
+            ) : (
+              "นำเข้า"
+            )}
           </motion.button>
         </div>
       </motion.div>
@@ -516,6 +534,7 @@ export default function PortalPage() {
   const { theme } = useTheme();
   const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
+  const router = useRouter();
   const { subjects } = useSubjects();
   const { addQuestions } = useQuizQuestions();
 
@@ -526,6 +545,7 @@ export default function PortalPage() {
   const [previewQuiz, setPreviewQuiz] = useState<PublicQuiz | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importLoading, setImportLoading] = useState(false);
 
   const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
@@ -580,6 +600,7 @@ export default function PortalPage() {
   // Handle import quiz by share code
   const handleImportQuiz = async (shareCode: string) => {
     setImportError(null);
+    setImportLoading(true);
     try {
       const quizData = await getSharedQuizByCode(shareCode);
 
@@ -605,6 +626,7 @@ export default function PortalPage() {
         // Increment play count via service
         await incrementQuizPlayCount(quizData.id);
         
+        setShowImportModal(false);
         alert(`นำเข้าสำเร็จ! เพิ่ม ${quizData.questions.length} คำถาม`);
       } else {
         setImportError("ข้อสอบนี้ไม่มีคำถาม");
@@ -612,6 +634,8 @@ export default function PortalPage() {
     } catch (error) {
       console.error("Import error:", error);
       setImportError("เกิดข้อผิดพลาดในการนำเข้า");
+    } finally {
+      setImportLoading(false);
     }
   };
 
@@ -671,7 +695,7 @@ export default function PortalPage() {
         await incrementQuizPlayCount(quiz.id);
         
         alert(`นำเข้าสำเร็จ ${quiz.questions.length} คำถาม! ไปที่หน้าทบทวนเพื่อเล่น`);
-        window.location.href = "/review";
+        router.push("/review");
       } catch (error) {
         console.error("Play error:", error);
         alert("เกิดข้อผิดพลาด กรุณาลองใหม่");
@@ -812,7 +836,7 @@ export default function PortalPage() {
             {/* Featured Section */}
             <FolderCard title="🏆 ข้อสอบยอดนิยมประจำสัปดาห์">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {quizzes.slice(0, 3).map((quiz, i) => (
+                {[...quizzes].sort((a, b) => b.playCount - a.playCount).slice(0, 3).map((quiz, i) => (
                   <motion.div
                     key={quiz.id}
                     className="p-4 rounded-xl flex items-center gap-3"
@@ -865,11 +889,15 @@ export default function PortalPage() {
 
       {/* Import Code Modal */}
       <AnimatePresence>
-        <ImportCodeModal
-          isOpen={showImportModal}
-          onClose={() => setShowImportModal(false)}
-          onImport={handleImportQuiz}
-        />
+        {showImportModal && (
+          <ImportCodeModal
+            isOpen={showImportModal}
+            onClose={() => { setShowImportModal(false); setImportError(null); }}
+            onImport={handleImportQuiz}
+            error={importError}
+            loading={importLoading}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

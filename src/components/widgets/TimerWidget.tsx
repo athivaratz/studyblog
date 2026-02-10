@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
 import { Play, Pause, RotateCcw, Flag } from "lucide-react";
-import { useTheme } from "@/contexts";
+import { useTheme, usePrimaryColor } from "@/contexts";
 
 interface TimerWidgetProps {
   className?: string;
@@ -14,6 +14,7 @@ type TimerMode = "pomodoro" | "stopwatch";
 
 export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [mode, setMode] = useState<TimerMode>("pomodoro");
   const [isRunning, setIsRunning] = useState(false);
@@ -30,8 +31,8 @@ export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
 
   // Theme-aware colors
   const bgColor = isDark ? "#1A1A1A" : "#2D2D2D";
-  const borderColor = isDark ? "#606060" : "#1A1A1A";
-  const shadowColor = isDark ? "#404040" : "#1A1A1A";
+  const borderColor = isDark ? "#606060" : primaryColor;
+  const shadowColor = isDark ? "#404040" : primaryColor;
 
   // Timer logic
   useEffect(() => {
@@ -130,10 +131,11 @@ export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
               px-2 py-1 rounded-md text-xs font-kanit
               transition-colors
               ${mode === "pomodoro" 
-                ? "bg-[#FF6B6B] text-white" 
+                ? "text-white" 
                 : "bg-white/10 text-white/60 hover:bg-white/20"
               }
             `}
+            style={mode === "pomodoro" ? { backgroundColor: primaryColor } : undefined}
           >
             🍅
           </button>
@@ -187,7 +189,7 @@ export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
               height="50"
               rx="8"
               fill="none"
-              stroke="#FF6B6B"
+              stroke={primaryColor}
               strokeWidth="2"
               strokeDasharray={`${progress * 2.8} 280`}
               className="transition-all duration-1000"
@@ -204,10 +206,8 @@ export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
         >
           <div className="flex items-center justify-center">
             <motion.span 
-              className={`
-                font-mono text-3xl font-bold tracking-wider
-                ${mode === "pomodoro" ? "text-[#FF6B6B]" : "text-[#4ECDC4]"}
-              `}
+              className="font-mono text-3xl font-bold tracking-wider"
+              style={{ color: mode === "pomodoro" ? primaryColor : "#4ECDC4" }}
               key={time}
               initial={{ scale: 1.1 }}
               animate={{ scale: 1 }}
@@ -215,10 +215,9 @@ export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
               {formatTime(time)}
             </motion.span>
           </div>
-          <p className={`
-            text-center font-kanit text-xs mt-1
-            ${mode === "pomodoro" ? "text-[#FF6B6B]/60" : "text-[#4ECDC4]/60"}
-          `}>
+          <p className="text-center font-kanit text-xs mt-1"
+            style={{ color: mode === "pomodoro" ? `${primaryColor}99` : "rgba(78,205,196,0.6)" }}
+          >
             {mode === "pomodoro" ? "โหมดโพโมโดโร" : "นาฬิกาจับเวลา"}
           </p>
         </div>
@@ -233,12 +232,16 @@ export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
               onClick={() => handlePresetChange(index)}
               className={`
                 flex-1 py-1 rounded text-xs font-kanit
-                transition-colors border border-black
+                transition-colors border
                 ${selectedPreset === index
-                  ? "bg-[#FF6B6B] text-white"
+                  ? "text-white"
                   : "bg-white/10 text-white/60 hover:bg-white/20"
                 }
               `}
+              style={{
+                borderColor: 'rgba(255,255,255,0.3)',
+                ...(selectedPreset === index ? { backgroundColor: primaryColor } : {})
+              }}
             >
               {preset.label}
             </button>
@@ -251,7 +254,7 @@ export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
         <motion.button
           onClick={() => setIsRunning(!isRunning)}
           className={`
-            flex-1 py-2 rounded-lg border-2 border-black
+            flex-1 py-2 rounded-lg border-2
             flex items-center justify-center gap-1
             font-kanit text-sm font-medium
             ${isRunning 
@@ -259,6 +262,7 @@ export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
               : "bg-[#4ECDC4] text-white"
             }
           `}
+          style={{ borderColor: 'rgba(255,255,255,0.3)' }}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
@@ -278,7 +282,8 @@ export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
         {mode === "stopwatch" && isRunning && (
           <motion.button
             onClick={handleLap}
-            className="px-3 py-2 rounded-lg border-2 border-black bg-[#E8D5F2] text-black"
+            className="px-3 py-2 rounded-lg border-2 text-black"
+            style={{ borderColor: 'rgba(255,255,255,0.3)', backgroundColor: '#E8D5F2' }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -288,7 +293,8 @@ export function TimerWidget({ className = "", onSwap }: TimerWidgetProps) {
 
         <motion.button
           onClick={handleReset}
-          className="px-3 py-2 rounded-lg border-2 border-black bg-white/10 text-white"
+          className="px-3 py-2 rounded-lg border-2 bg-white/10 text-white"
+          style={{ borderColor: 'rgba(255,255,255,0.3)' }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >

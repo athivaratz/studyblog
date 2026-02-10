@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Navbar, MobileHeader, LoadingScreen } from "@/components/layout";
 import { FolderCard } from "@/components/ui";
 import { ClockTimerWidget, IPodPlayer, MobileUtilities, CSVImportModal, AIQuizGenerator } from "@/components/widgets";
-import { TutorialOverlay } from "@/components/tutorial";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
@@ -33,6 +33,9 @@ import {
   ChevronRight,
   FolderOpen,
   Save,
+  Play,
+  ArrowLeft,
+  Layers,
 } from "lucide-react";
 
 // Types
@@ -376,6 +379,9 @@ function ReviewDashboard() {
   const [editForm, setEditForm] = useState<{question: string; correctAnswer: string; wrongAnswers: string[]; difficulty: string} | null>(null);
   const [editSetForm, setEditSetForm] = useState<{name: string; description: string} | null>(null);
   const [shareSetId, setShareSetId] = useState<string | null>(null);
+  // New: track which source to play (quiz set id, "flashcards", "all", or null for browse)
+  const [selectedPlaySource, setSelectedPlaySource] = useState<string | null>(null);
+  const [showGameModeSelect, setShowGameModeSelect] = useState(false);
 
   // Theme colors
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
@@ -461,9 +467,33 @@ function ReviewDashboard() {
     }
   };
 
-  // Start a game
-  const startGame = (mode: "quiz" | "memory" | "speed") => {
-    // Combine flashcards and quiz questions
+  // Helper: get cards for a given source
+  const getCardsForSource = (source: string | null) => {
+    if (source === "flashcards") {
+      return (dueCards.length > 0 ? dueCards : filteredFlashcards).map(f => ({
+        id: f.id,
+        front: f.question,
+        back: f.answer,
+        subjectId: f.subjectId,
+        wrongAnswers: [] as string[],
+        source: "flashcard" as const,
+      }));
+    }
+
+    if (source && source !== "all") {
+      // Specific quiz set
+      const setQuestions = quizQuestions.filter(q => q.quizSetId === source);
+      return setQuestions.map(q => ({
+        id: q.id,
+        front: q.question,
+        back: q.correctAnswer,
+        subjectId: q.subjectId,
+        wrongAnswers: q.wrongAnswers || [],
+        source: "quiz" as const,
+      }));
+    }
+
+    // "all" - combine everything
     const flashcardsAsCards = (dueCards.length > 0 ? dueCards : filteredFlashcards).map(f => ({
       id: f.id,
       front: f.question,
@@ -472,12 +502,9 @@ function ReviewDashboard() {
       wrongAnswers: [] as string[],
       source: "flashcard" as const,
     }));
-
-    // Filter quiz questions by subject if needed
     const filteredQuizQuestions = selectedSubjectFilter !== "all"
       ? quizQuestions.filter(q => q.subjectId === selectedSubjectFilter)
       : quizQuestions;
-
     const quizQuestionsAsCards = filteredQuizQuestions.map(q => ({
       id: q.id,
       front: q.question,
@@ -486,9 +513,13 @@ function ReviewDashboard() {
       wrongAnswers: q.wrongAnswers || [],
       source: "quiz" as const,
     }));
+    return [...flashcardsAsCards, ...quizQuestionsAsCards];
+  };
 
-    // Combine both sources
-    const allCards = [...flashcardsAsCards, ...quizQuestionsAsCards];
+  // Start a game with a specific source
+  const startGame = (mode: "quiz" | "memory" | "speed", source?: string | null) => {
+    const sourceToUse = source ?? selectedPlaySource ?? "all";
+    const allCards = getCardsForSource(sourceToUse);
 
     if (allCards.length < 4) {
       alert("ต้องมีการ์ดหรือคำถามอย่างน้อย 4 ข้อเพื่อเริ่มเกม");
@@ -517,6 +548,8 @@ function ReviewDashboard() {
         source: c.source,
       })),
     });
+    setShowGameModeSelect(false);
+    setSelectedPlaySource(null);
   };
 
   // End game and save results
@@ -707,197 +740,310 @@ function ReviewDashboard() {
               </motion.button>
             )}
 
-            {/* Game Modes */}
-            <FolderCard title="เลือกโหมดเกม">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                {gameModes.map((mode) => {
-                  const filteredQuizQ = selectedSubjectFilter !== "all"
-                    ? quizQuestions.filter(q => q.subjectId === selectedSubjectFilter)
-                    : quizQuestions;
-                  const totalCards = filteredFlashcards.length + filteredQuizQ.length;
-                  return (
+            {/* === Quiz Sets & Play Section === */}
+            <FolderCard title="ชุดข้อสอบ">
+              {/* Game Mode Selection Modal (overlay within the card flow) */}
+              <AnimatePresence>
+                {showGameModeSelect && selectedPlaySource && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mb-4"
+                  >
+                    <div className="rounded-2xl border-2 p-4" style={{ backgroundColor: isDark ? "#2A2A2A" : "#FAFAFA", borderColor: primaryColor }}>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <motion.button
+                            onClick={() => { setShowGameModeSelect(false); setSelectedPlaySource(null); }}
+                            className="p-1.5 rounded-lg"
+                            style={{ color: textMuted }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <ArrowLeft className="w-5 h-5" />
+                          </motion.button>
+                          <h4 className="font-kanit font-bold" style={{ color: textColor }}>
+                            เลือกโหมดเกม
+                          </h4>
+                        </div>
+                        <span className="font-kanit text-xs px-2 py-1 rounded-full" style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}>
+                          {getCardsForSource(selectedPlaySource).length} ข้อ
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                        {gameModes.map((mode) => {
+                          const cardCount = getCardsForSource(selectedPlaySource).length;
+                          return (
+                            <motion.button
+                              key={mode.id}
+                              onClick={() => startGame(mode.id, selectedPlaySource)}
+                              disabled={cardCount < 4}
+                              className="p-4 rounded-2xl border-2 text-left relative overflow-hidden"
+                              style={{
+                                backgroundColor: mode.color,
+                                borderColor,
+                                opacity: cardCount < 4 ? 0.5 : 1,
+                              }}
+                              whileHover={{ scale: cardCount >= 4 ? 1.02 : 1 }}
+                              whileTap={{ scale: cardCount >= 4 ? 0.98 : 1 }}
+                            >
+                              <div className="flex items-center gap-3 mb-2">
+                                <div
+                                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                                  style={{ backgroundColor: mode.iconBg }}
+                                >
+                                  <mode.icon className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                  <h4 className="font-kanit font-bold" style={{ color: textColor }}>{mode.name}</h4>
+                                  <p className="font-kanit text-xs" style={{ color: textMuted }}>{mode.desc}</p>
+                                </div>
+                              </div>
+                              <p className="font-kanit text-xs" style={{ color: textMuted }}>
+                                {mode.detail}
+                              </p>
+                              {cardCount < 4 && (
+                                <p className="font-kanit text-xs mt-1" style={{ color: "#EF4444" }}>
+                                  ต้องมีอย่างน้อย 4 ข้อ
+                                </p>
+                              )}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Play All Button */}
+              {(() => {
+                const filteredQuizQ = selectedSubjectFilter !== "all"
+                  ? quizQuestions.filter(q => q.subjectId === selectedSubjectFilter)
+                  : quizQuestions;
+                const totalAvailable = filteredFlashcards.length + filteredQuizQ.length;
+                return totalAvailable > 0 ? (
                   <motion.button
-                    key={mode.id}
-                    onClick={() => startGame(mode.id)}
-                    disabled={totalCards < 4}
-                    className="p-4 rounded-2xl border-2 text-left relative overflow-hidden"
+                    onClick={() => { setSelectedPlaySource("all"); setShowGameModeSelect(true); }}
+                    className="w-full mb-4 p-4 rounded-2xl border-2 flex items-center gap-4"
                     style={{
-                      backgroundColor: mode.color,
-                      borderColor,
-                      opacity: totalCards < 4 ? 0.5 : 1,
+                      background: `linear-gradient(135deg, ${primaryColor} 0%, ${isDark ? '#0080C0' : '#4FADDB'} 100%)`,
+                      borderColor: primaryColor,
                     }}
-                    whileHover={{ scale: totalCards >= 4 ? 1.02 : 1 }}
-                    whileTap={{ scale: totalCards >= 4 ? 0.98 : 1 }}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                   >
-                    <div className="flex items-center gap-3 mb-2">
-                      <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center"
-                        style={{ backgroundColor: mode.iconBg }}
-                      >
-                        <mode.icon className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-kanit font-bold" style={{ color: textColor }}>{mode.name}</h4>
-                        <p className="font-kanit text-xs" style={{ color: textMuted }}>{mode.desc}</p>
-                      </div>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/20">
+                      <Layers className="w-6 h-6 text-white" />
                     </div>
-                    <p className="font-kanit text-xs" style={{ color: textMuted }}>
-                      {mode.detail}
-                    </p>
+                    <div className="flex-1 text-left">
+                      <h4 className="font-kanit font-bold text-white">
+                        เล่นทั้งหมด
+                      </h4>
+                      <p className="font-kanit text-xs text-white/80">
+                        รวมการ์ด + ข้อสอบทุกชุด ({totalAvailable} ข้อ)
+                      </p>
+                    </div>
+                    <Play className="w-6 h-6 text-white" />
                   </motion.button>
-                  );
-                })}
-              </div>
-            </FolderCard>
+                ) : null;
+              })()}
 
-            {/* AI Quiz Tools */}
-            <FolderCard title="เครื่องมือสร้างโจทย์">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                {/* AI Generator Button */}
-                <motion.button
-                  onClick={() => setShowAIGenerator(true)}
-                  className="p-4 rounded-xl border-2 text-left flex items-center gap-3"
-                  style={{
-                    backgroundColor: isDark ? "#2A3D4D" : "#E0F2FE",
-                    borderColor: primaryColor,
-                  }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+              {/* Flashcards Play Card */}
+              {filteredFlashcards.length > 0 && (
+                <motion.div
+                  className="mb-3 rounded-2xl border-2 overflow-hidden"
+                  style={{ backgroundColor: isDark ? "#2D2D2D" : "#FFFFFF", borderColor: isDark ? "#404040" : "#E5E5E5" }}
+                  whileHover={{ y: -2 }}
                 >
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    <Sparkles className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="font-kanit font-bold" style={{ color: textColor }}>
-                      AI สร้างโจทย์
-                    </h4>
-                    <p className="font-kanit text-xs" style={{ color: textMuted }}>
-                      ใช้ Gemini AI สร้างคำถามจากหลักสูตร
-                    </p>
-                  </div>
-                </motion.button>
-
-                {/* CSV Import Button */}
-                <motion.button
-                  onClick={() => setShowCSVImport(true)}
-                  className="p-4 rounded-xl border-2 text-left flex items-center gap-3"
-                  style={{
-                    backgroundColor: isDark ? "#3D4D2A" : "#ECFCCB",
-                    borderColor: "#84CC16",
-                  }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: "#84CC16" }}
-                  >
-                    <FileSpreadsheet className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="font-kanit font-bold" style={{ color: textColor }}>
-                      Import CSV
-                    </h4>
-                    <p className="font-kanit text-xs" style={{ color: textMuted }}>
-                      นำเข้าคำถามจากไฟล์ CSV ของคุณ
-                    </p>
-                  </div>
-                </motion.button>
-              </div>
-
-              {/* AI Questions Summary */}
-              {quizQuestions.length > 0 && (
-                <div className="mt-4 p-3 rounded-xl" style={{ backgroundColor: isDark ? "#3D3D3D" : "#F8F8F8" }}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4" style={{ color: primaryColor }} />
-                      <span className="font-kanit text-sm" style={{ color: textColor }}>
-                        คำถาม AI/CSV: <span className="font-bold">{quizQuestions.length}</span> ข้อ
-                      </span>
+                  <div className="p-4 flex items-center gap-4">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: isDark ? "#3D2A4D" : "#E8D5F2" }}
+                    >
+                      <Brain className="w-6 h-6" style={{ color: "#8B5CF6" }} />
                     </div>
-                    <div className="flex gap-2">
-                      <span className="font-kanit text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                        ง่าย: {quizQuestions.filter(q => q.difficulty === "easy").length}
-                      </span>
-                      <span className="font-kanit text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">
-                        กลาง: {quizQuestions.filter(q => q.difficulty === "medium").length}
-                      </span>
-                      <span className="font-kanit text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">
-                        ยาก: {quizQuestions.filter(q => q.difficulty === "hard").length}
-                      </span>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-kanit font-bold text-sm truncate" style={{ color: textColor }}>
+                        การ์ด Flashcard
+                      </h4>
+                      <p className="font-kanit text-xs" style={{ color: textMuted }}>
+                        {dueCards.length > 0 ? `${dueCards.length} ใบรอทบทวน` : `${filteredFlashcards.length} ใบ`}
+                      </p>
                     </div>
+                    <motion.button
+                      onClick={() => { setSelectedPlaySource("flashcards"); setShowGameModeSelect(true); }}
+                      className="px-4 py-2 rounded-xl font-kanit text-sm text-white flex items-center gap-2 flex-shrink-0"
+                      style={{ backgroundColor: "#8B5CF6" }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Play className="w-4 h-4" />
+                      เล่น
+                    </motion.button>
                   </div>
-                </div>
+                </motion.div>
               )}
-            </FolderCard>
 
-            {/* Quiz Sets Management */}
-            {quizSets.length > 0 && (
-              <FolderCard title="ชุดข้อสอบ">
+              {/* Quiz Sets as Playable Cards */}
+              {quizSets.length > 0 && (
                 <div className="space-y-3">
                   {quizSets.map((set) => {
                     const setQuestions = quizQuestions.filter(q => q.quizSetId === set.id);
                     const isExpanded = managingSetId === set.id;
                     const isEditingSet = editSetForm !== null && managingSetId === set.id && editingQuestionId === null;
 
+                    // Determine overall difficulty
+                    const difficulties = setQuestions.map(q => q.difficulty);
+                    const setDifficulty = difficulties.length > 0
+                      ? difficulties.every(d => d === difficulties[0])
+                        ? difficulties[0]
+                        : "mixed"
+                      : "medium";
+                    const difficultyLabels: Record<string, string> = { easy: "ง่าย", medium: "ปานกลาง", hard: "ยาก", mixed: "คละระดับ" };
+                    const difficultyColors: Record<string, { bg: string; text: string }> = {
+                      easy: { bg: "#D4F5D4", text: "#166534" },
+                      medium: { bg: "#FEF3C7", text: "#92400E" },
+                      hard: { bg: "#FEE2E2", text: "#991B1B" },
+                      mixed: { bg: "#E0E7FF", text: "#3730A3" },
+                    };
+                    const diffStyle = difficultyColors[setDifficulty] || difficultyColors.mixed;
+
                     return (
-                      <div key={set.id} className="rounded-xl overflow-hidden border-2" style={{ borderColor: isDark ? "#404040" : "#E5E5E5" }}>
-                        {/* Set Header */}
+                      <motion.div
+                        key={set.id}
+                        className="rounded-2xl border-2 overflow-hidden"
+                        style={{ backgroundColor: isDark ? "#2D2D2D" : "#FFFFFF", borderColor: isDark ? "#404040" : "#E5E5E5" }}
+                        whileHover={{ y: -2 }}
+                      >
+                        {/* Set Header - Portal-style */}
                         <div
-                          className="p-3 flex items-center gap-3 cursor-pointer"
-                          style={{ backgroundColor: isDark ? "#3D3D3D" : "#F8F8F8" }}
-                          onClick={() => setManagingSetId(isExpanded ? null : set.id)}
+                          className="p-4"
+                          style={{ background: `linear-gradient(135deg, ${primaryColor}18 0%, ${primaryColor}08 100%)` }}
                         >
-                          <FolderOpen className="w-5 h-5 flex-shrink-0" style={{ color: primaryColor }} />
-                          <div className="flex-1 min-w-0">
-                            {isEditingSet ? (
-                              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                <input
-                                  type="text"
-                                  value={editSetForm?.name || ""}
-                                  onChange={e => setEditSetForm(prev => prev ? {...prev, name: e.target.value} : null)}
-                                  className="flex-1 px-2 py-1 rounded-lg border font-kanit text-sm focus:outline-none"
-                                  style={{ backgroundColor: isDark ? "#2D2D2D" : "#FFFFFF", borderColor: primaryColor, color: textColor }}
-                                />
-                                <motion.button
-                                  onClick={async () => {
-                                    if (editSetForm) {
-                                      await editQuizSet(set.id, { name: editSetForm.name, description: editSetForm.description });
-                                      setEditSetForm(null);
-                                    }
-                                  }}
-                                  className="p-1 rounded-lg" style={{ backgroundColor: primaryColor }}
-                                  whileTap={{ scale: 0.9 }}
-                                >
-                                  <Save className="w-4 h-4 text-white" />
-                                </motion.button>
-                                <motion.button
-                                  onClick={() => setEditSetForm(null)}
-                                  className="p-1 rounded-lg" style={{ backgroundColor: isDark ? "#555" : "#DDD" }}
-                                  whileTap={{ scale: 0.9 }}
-                                >
-                                  <X className="w-4 h-4" style={{ color: textColor }} />
-                                </motion.button>
-                              </div>
-                            ) : (
-                              <>
-                                <p className="font-kanit font-bold text-sm truncate" style={{ color: textColor }}>{set.name}</p>
-                                {set.description && (
-                                  <p className="font-kanit text-xs truncate" style={{ color: textMuted }}>{set.description}</p>
+                          <div className="flex items-start gap-3">
+                            <div
+                              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                              style={{ backgroundColor: `${primaryColor}20` }}
+                            >
+                              <FolderOpen className="w-6 h-6" style={{ color: primaryColor }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              {isEditingSet ? (
+                                <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                                  <input
+                                    type="text"
+                                    value={editSetForm?.name || ""}
+                                    onChange={e => setEditSetForm(prev => prev ? {...prev, name: e.target.value} : null)}
+                                    className="flex-1 px-2 py-1 rounded-lg border font-kanit text-sm focus:outline-none"
+                                    style={{ backgroundColor: isDark ? "#2D2D2D" : "#FFFFFF", borderColor: primaryColor, color: textColor }}
+                                  />
+                                  <motion.button
+                                    onClick={async () => {
+                                      if (editSetForm) {
+                                        await editQuizSet(set.id, { name: editSetForm.name, description: editSetForm.description });
+                                        setEditSetForm(null);
+                                      }
+                                    }}
+                                    className="p-1 rounded-lg" style={{ backgroundColor: primaryColor }}
+                                    whileTap={{ scale: 0.9 }}
+                                  >
+                                    <Save className="w-4 h-4 text-white" />
+                                  </motion.button>
+                                  <motion.button
+                                    onClick={() => setEditSetForm(null)}
+                                    className="p-1 rounded-lg" style={{ backgroundColor: isDark ? "#555" : "#DDD" }}
+                                    whileTap={{ scale: 0.9 }}
+                                  >
+                                    <X className="w-4 h-4" style={{ color: textColor }} />
+                                  </motion.button>
+                                </div>
+                              ) : (
+                                <>
+                                  <h4 className="font-kanit font-bold text-sm truncate" style={{ color: textColor }}>
+                                    {set.name}
+                                  </h4>
+                                  {set.description && (
+                                    <p className="font-kanit text-xs truncate" style={{ color: textMuted }}>{set.description}</p>
+                                  )}
+                                </>
+                              )}
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <span className="font-kanit text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}>
+                                  {setQuestions.length} ข้อ
+                                </span>
+                                <span className="font-kanit text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: diffStyle.bg, color: diffStyle.text }}>
+                                  {difficultyLabels[setDifficulty] || setDifficulty}
+                                </span>
+                                {set.source && (
+                                  <span className="font-kanit text-xs" style={{ color: textMuted }}>
+                                    {set.source === "ai" ? "🤖 AI" : "📄 CSV"}
+                                  </span>
                                 )}
-                              </>
-                            )}
+                              </div>
+                            </div>
+                            {/* Play button */}
+                            <motion.button
+                              onClick={() => { setSelectedPlaySource(set.id); setShowGameModeSelect(true); }}
+                              disabled={setQuestions.length < 4}
+                              className="px-4 py-2 rounded-xl font-kanit text-sm text-white flex items-center gap-2 flex-shrink-0 disabled:opacity-40"
+                              style={{ backgroundColor: primaryColor }}
+                              whileHover={{ scale: setQuestions.length >= 4 ? 1.05 : 1 }}
+                              whileTap={{ scale: setQuestions.length >= 4 ? 0.95 : 1 }}
+                            >
+                              <Play className="w-4 h-4" />
+                              เล่น
+                            </motion.button>
                           </div>
-                          <span className="font-kanit text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}>
-                            {setQuestions.length} ข้อ
-                          </span>
-                          <ChevronRight className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} style={{ color: textMuted }} />
                         </div>
 
-                        {/* Set Actions & Questions */}
+                        {/* Set Actions */}
+                        <div className="px-4 py-2 flex gap-2 border-t" style={{ borderColor: isDark ? "#404040" : "#E5E5E5" }}>
+                          <motion.button
+                            onClick={() => setManagingSetId(isExpanded ? null : set.id)}
+                            className="px-3 py-1 rounded-lg font-kanit text-xs flex items-center gap-1"
+                            style={{ backgroundColor: isDark ? "#3D3D3D" : "#F0F0F0", color: textMuted }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <ChevronRight className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                            {isExpanded ? "ซ่อนคำถาม" : "ดูคำถาม"}
+                          </motion.button>
+                          <motion.button
+                            onClick={() => { setEditSetForm({ name: set.name, description: set.description || "" }); setEditingQuestionId(null); setManagingSetId(set.id); }}
+                            className="px-3 py-1 rounded-lg font-kanit text-xs flex items-center gap-1"
+                            style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <Edit2 className="w-3 h-3" /> แก้ไข
+                          </motion.button>
+                          <motion.button
+                            onClick={() => {
+                              setShareSetId(set.id);
+                              setShareResult(null);
+                              setShowShareModal(true);
+                            }}
+                            className="px-3 py-1 rounded-lg font-kanit text-xs flex items-center gap-1"
+                            style={{ backgroundColor: "rgba(34, 197, 94, 0.1)", color: "#22C55E" }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <Share2 className="w-3 h-3" /> แชร์
+                          </motion.button>
+                          <motion.button
+                            onClick={async () => {
+                              if (confirm(`ลบชุด "${set.name}" และคำถามทั้งหมด?`)) {
+                                await removeQuizSet(set.id);
+                                setManagingSetId(null);
+                              }
+                            }}
+                            className="px-3 py-1 rounded-lg font-kanit text-xs flex items-center gap-1"
+                            style={{ backgroundColor: "rgba(239, 68, 68, 0.1)", color: "#EF4444" }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <Trash2 className="w-3 h-3" /> ลบ
+                          </motion.button>
+                        </div>
+
+                        {/* Expanded Questions List */}
                         <AnimatePresence>
                           {isExpanded && (
                             <motion.div
@@ -906,51 +1052,11 @@ function ReviewDashboard() {
                               exit={{ height: 0, opacity: 0 }}
                               className="overflow-hidden"
                             >
-                              {/* Set Actions */}
-                              <div className="px-3 py-2 flex gap-2 border-t" style={{ borderColor: isDark ? "#404040" : "#E5E5E5" }}>
-                                <motion.button
-                                  onClick={(e) => { e.stopPropagation(); setEditSetForm({ name: set.name, description: set.description || "" }); setEditingQuestionId(null); }}
-                                  className="px-3 py-1 rounded-lg font-kanit text-xs flex items-center gap-1"
-                                  style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
-                                  whileTap={{ scale: 0.95 }}
-                                >
-                                  <Edit2 className="w-3 h-3" /> แก้ไขชื่อ
-                                </motion.button>
-                                <motion.button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShareSetId(set.id);
-                                    setShareResult(null);
-                                    setShowShareModal(true);
-                                  }}
-                                  className="px-3 py-1 rounded-lg font-kanit text-xs flex items-center gap-1"
-                                  style={{ backgroundColor: "rgba(34, 197, 94, 0.1)", color: "#22C55E" }}
-                                  whileTap={{ scale: 0.95 }}
-                                >
-                                  <Share2 className="w-3 h-3" /> แชร์
-                                </motion.button>
-                                <motion.button
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    if (confirm(`ลบชุด "${set.name}" และคำถามทั้งหมด?`)) {
-                                      await removeQuizSet(set.id);
-                                      setManagingSetId(null);
-                                    }
-                                  }}
-                                  className="px-3 py-1 rounded-lg font-kanit text-xs flex items-center gap-1"
-                                  style={{ backgroundColor: "rgba(239, 68, 68, 0.1)", color: "#EF4444" }}
-                                  whileTap={{ scale: 0.95 }}
-                                >
-                                  <Trash2 className="w-3 h-3" /> ลบชุด
-                                </motion.button>
-                              </div>
-
-                              {/* Questions List */}
                               <div className="max-h-64 overflow-y-auto">
                                 {setQuestions.map((q, i) => (
                                   <div
                                     key={q.id}
-                                    className="px-3 py-2 border-t flex items-start gap-2"
+                                    className="px-4 py-2 border-t flex items-start gap-2"
                                     style={{ borderColor: isDark ? "#404040" : "#E5E5E5" }}
                                   >
                                     {editingQuestionId === q.id && editForm ? (
@@ -1067,87 +1173,197 @@ function ReviewDashboard() {
                             </motion.div>
                           )}
                         </AnimatePresence>
-                      </div>
+                      </motion.div>
                     );
                   })}
-
-                  {/* Ungrouped questions */}
-                  {(() => {
-                    const ungrouped = quizQuestions.filter(q => !q.quizSetId);
-                    if (ungrouped.length === 0) return null;
-                    return (
-                      <div className="rounded-xl overflow-hidden border-2" style={{ borderColor: isDark ? "#404040" : "#E5E5E5" }}>
-                        <div
-                          className="p-3 flex items-center gap-3 cursor-pointer"
-                          style={{ backgroundColor: isDark ? "#3D3D3D" : "#F8F8F8" }}
-                          onClick={() => setManagingSetId(managingSetId === "__ungrouped" ? null : "__ungrouped")}
-                        >
-                          <BookOpen className="w-5 h-5 flex-shrink-0" style={{ color: textMuted }} />
-                          <p className="flex-1 font-kanit font-bold text-sm" style={{ color: textColor }}>คำถามที่ไม่จัดกลุ่ม</p>
-                          <span className="font-kanit text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: isDark ? "#555" : "#E5E5E5", color: textMuted }}>
-                            {ungrouped.length} ข้อ
-                          </span>
-                          <ChevronRight className={`w-4 h-4 transition-transform ${managingSetId === "__ungrouped" ? "rotate-90" : ""}`} style={{ color: textMuted }} />
-                        </div>
-                        <AnimatePresence>
-                          {managingSetId === "__ungrouped" && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              className="overflow-hidden max-h-64 overflow-y-auto"
-                            >
-                              {ungrouped.map((q, i) => (
-                                <div
-                                  key={q.id}
-                                  className="px-3 py-2 border-t flex items-start gap-2"
-                                  style={{ borderColor: isDark ? "#404040" : "#E5E5E5" }}
-                                >
-                                  <span className="font-kanit text-xs mt-0.5 flex-shrink-0" style={{ color: textMuted }}>{i + 1}.</span>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-kanit text-sm truncate" style={{ color: textColor }}>{q.question}</p>
-                                    <p className="font-kanit text-xs" style={{ color: "#22C55E" }}>✓ {q.correctAnswer}</p>
-                                  </div>
-                                  <div className="flex gap-1 flex-shrink-0">
-                                    <motion.button
-                                      onClick={() => {
-                                        setEditingQuestionId(q.id);
-                                        setEditForm({
-                                          question: q.question,
-                                          correctAnswer: q.correctAnswer,
-                                          wrongAnswers: [...q.wrongAnswers],
-                                          difficulty: q.difficulty,
-                                        });
-                                        setManagingSetId("__ungrouped");
-                                      }}
-                                      className="p-1 rounded-lg"
-                                      style={{ color: primaryColor }}
-                                      whileTap={{ scale: 0.9 }}
-                                    >
-                                      <Edit2 className="w-3.5 h-3.5" />
-                                    </motion.button>
-                                    <motion.button
-                                      onClick={async () => {
-                                        if (confirm("ลบคำถามนี้?")) await removeQuestion(q.id);
-                                      }}
-                                      className="p-1 rounded-lg"
-                                      style={{ color: "#EF4444" }}
-                                      whileTap={{ scale: 0.9 }}
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </motion.button>
-                                  </div>
-                                </div>
-                              ))}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    );
-                  })()}
                 </div>
-              </FolderCard>
-            )}
+              )}
+
+              {/* Ungrouped Questions */}
+              {(() => {
+                const ungrouped = quizQuestions.filter(q => !q.quizSetId);
+                if (ungrouped.length === 0) return null;
+                return (
+                  <motion.div
+                    className="mt-3 rounded-2xl border-2 overflow-hidden"
+                    style={{ backgroundColor: isDark ? "#2D2D2D" : "#FFFFFF", borderColor: isDark ? "#404040" : "#E5E5E5" }}
+                  >
+                    <div className="p-4 flex items-center gap-3">
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: isDark ? "#3D3D3D" : "#F0F0F0" }}
+                      >
+                        <BookOpen className="w-6 h-6" style={{ color: textMuted }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-kanit font-bold text-sm" style={{ color: textColor }}>
+                          คำถามที่ไม่จัดกลุ่ม
+                        </h4>
+                        <p className="font-kanit text-xs" style={{ color: textMuted }}>
+                          {ungrouped.length} ข้อ
+                        </p>
+                      </div>
+                      <motion.button
+                        onClick={() => setManagingSetId(managingSetId === "__ungrouped" ? null : "__ungrouped")}
+                        className="px-3 py-1 rounded-lg font-kanit text-xs flex items-center gap-1"
+                        style={{ backgroundColor: isDark ? "#3D3D3D" : "#F0F0F0", color: textMuted }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <ChevronRight className={`w-3 h-3 transition-transform ${managingSetId === "__ungrouped" ? "rotate-90" : ""}`} />
+                        {managingSetId === "__ungrouped" ? "ซ่อน" : "ดู"}
+                      </motion.button>
+                    </div>
+                    <AnimatePresence>
+                      {managingSetId === "__ungrouped" && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden max-h-64 overflow-y-auto"
+                        >
+                          {ungrouped.map((q, i) => (
+                            <div
+                              key={q.id}
+                              className="px-4 py-2 border-t flex items-start gap-2"
+                              style={{ borderColor: isDark ? "#404040" : "#E5E5E5" }}
+                            >
+                              <span className="font-kanit text-xs mt-0.5 flex-shrink-0" style={{ color: textMuted }}>{i + 1}.</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-kanit text-sm truncate" style={{ color: textColor }}>{q.question}</p>
+                                <p className="font-kanit text-xs" style={{ color: "#22C55E" }}>✓ {q.correctAnswer}</p>
+                              </div>
+                              <div className="flex gap-1 flex-shrink-0">
+                                <motion.button
+                                  onClick={() => {
+                                    setEditingQuestionId(q.id);
+                                    setEditForm({
+                                      question: q.question,
+                                      correctAnswer: q.correctAnswer,
+                                      wrongAnswers: [...q.wrongAnswers],
+                                      difficulty: q.difficulty,
+                                    });
+                                    setManagingSetId("__ungrouped");
+                                  }}
+                                  className="p-1 rounded-lg"
+                                  style={{ color: primaryColor }}
+                                  whileTap={{ scale: 0.9 }}
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </motion.button>
+                                <motion.button
+                                  onClick={async () => {
+                                    if (confirm("ลบคำถามนี้?")) await removeQuestion(q.id);
+                                  }}
+                                  className="p-1 rounded-lg"
+                                  style={{ color: "#EF4444" }}
+                                  whileTap={{ scale: 0.9 }}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </motion.button>
+                              </div>
+                            </div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })()}
+
+              {/* Empty State */}
+              {quizSets.length === 0 && flashcards.length === 0 && quizQuestions.length === 0 && (
+                <div className="text-center py-8">
+                  <Layers className="w-12 h-12 mx-auto mb-2" style={{ color: textMuted }} />
+                  <p className="font-kanit text-sm" style={{ color: textMuted }}>
+                    ยังไม่มีชุดข้อสอบ ลองสร้างด้วย AI หรือ Import CSV
+                  </p>
+                </div>
+              )}
+            </FolderCard>
+
+            {/* AI Quiz Tools */}
+            <FolderCard title="เครื่องมือสร้างโจทย์">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {/* AI Generator Button */}
+                <motion.button
+                  onClick={() => setShowAIGenerator(true)}
+                  className="p-4 rounded-xl border-2 text-left flex items-center gap-3"
+                  style={{
+                    backgroundColor: isDark ? "#2A3D4D" : "#E0F2FE",
+                    borderColor: primaryColor,
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    <Sparkles className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-kanit font-bold" style={{ color: textColor }}>
+                      AI สร้างโจทย์
+                    </h4>
+                    <p className="font-kanit text-xs" style={{ color: textMuted }}>
+                      ใช้ Gemini AI สร้างคำถามจากหลักสูตร
+                    </p>
+                  </div>
+                </motion.button>
+
+                {/* CSV Import Button */}
+                <motion.button
+                  onClick={() => setShowCSVImport(true)}
+                  className="p-4 rounded-xl border-2 text-left flex items-center gap-3"
+                  style={{
+                    backgroundColor: isDark ? "#3D4D2A" : "#ECFCCB",
+                    borderColor: "#84CC16",
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: "#84CC16" }}
+                  >
+                    <FileSpreadsheet className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-kanit font-bold" style={{ color: textColor }}>
+                      Import CSV
+                    </h4>
+                    <p className="font-kanit text-xs" style={{ color: textMuted }}>
+                      นำเข้าคำถามจากไฟล์ CSV ของคุณ
+                    </p>
+                  </div>
+                </motion.button>
+              </div>
+
+              {/* AI Questions Summary */}
+              {quizQuestions.length > 0 && (
+                <div className="mt-4 p-3 rounded-xl" style={{ backgroundColor: isDark ? "#3D3D3D" : "#F8F8F8" }}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4" style={{ color: primaryColor }} />
+                      <span className="font-kanit text-sm" style={{ color: textColor }}>
+                        คำถาม AI/CSV: <span className="font-bold">{quizQuestions.length}</span> ข้อ
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="font-kanit text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                        ง่าย: {quizQuestions.filter(q => q.difficulty === "easy").length}
+                      </span>
+                      <span className="font-kanit text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">
+                        กลาง: {quizQuestions.filter(q => q.difficulty === "medium").length}
+                      </span>
+                      <span className="font-kanit text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                        ยาก: {quizQuestions.filter(q => q.difficulty === "hard").length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </FolderCard>
 
             {/* Flashcards Section */}
             <FolderCard
@@ -1888,8 +2104,6 @@ export default function ReviewPage() {
 
   return (
     <>
-      <TutorialOverlay />
-
       <MobileUtilities
         isOpen={showMobileUtilities}
         onClose={() => setShowMobileUtilities(false)}

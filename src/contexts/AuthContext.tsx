@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import {
   User,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   UserCredential,
@@ -11,6 +13,7 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
 import { initializeNewUser } from "@/lib/firebaseServices";
+import { isInAppBrowser } from "@/lib/utils";
 
 interface UserProfile {
   uid: string;
@@ -28,6 +31,7 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   initialized: boolean;
+  isWebView: boolean;
   signInWithGoogle: () => Promise<UserCredential | null>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -40,6 +44,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const [isWebView, setIsWebView] = useState(false);
+
+  // Detect in-app browser on mount
+  useEffect(() => {
+    setIsWebView(isInAppBrowser());
+  }, []);
+
+  // Handle redirect result (for in-app browser fallback)
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // Redirect sign-in succeeded, onAuthStateChanged will handle the rest
+          console.log("Redirect sign-in successful");
+        }
+      })
+      .catch((error) => {
+        console.error("Redirect sign-in error:", error);
+      });
+  }, []);
 
   // Listen to auth state changes
   useEffect(() => {
@@ -93,12 +117,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  // Sign in with Google
+  // Sign in with Google (with in-app browser fallback)
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
     try {
+      // Try popup first
       const result = await signInWithPopup(auth, googleProvider);
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
+      const firebaseError = error as { code?: string };
+      // If popup is blocked or fails in WebView, try redirect
+      if (
+        firebaseError.code === "auth/popup-blocked" ||
+        firebaseError.code === "auth/popup-closed-by-browser" ||
+        firebaseError.code === "auth/cancelled-popup-request" ||
+        isWebView
+      ) {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return null; // Will complete after redirect
+        } catch (redirectError) {
+          console.error("Redirect sign-in also failed:", redirectError);
+          return null;
+        }
+      }
       console.error("Error signing in with Google:", error);
       return null;
     }
@@ -129,6 +170,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userProfile,
     loading,
     initialized,
+    isWebView,
     signInWithGoogle,
     signOut,
     updateProfile,
@@ -147,6 +189,7 @@ const defaultAuthContext: AuthContextType = {
   userProfile: null,
   loading: true,
   initialized: false,
+  isWebView: false,
   signInWithGoogle: async () => null,
   signOut: async () => {},
   updateProfile: async () => {},

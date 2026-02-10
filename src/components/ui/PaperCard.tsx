@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
-import { useTheme } from "@/contexts";
+import { useTheme, usePrimaryColor } from "@/contexts";
 
 interface PaperCardProps {
   children: ReactNode;
@@ -15,7 +15,7 @@ interface PaperCardProps {
 // Light mode colors
 const lightColors = {
   white: "#FFFEF9",
-  cream: "#FFF8E7",
+  cream: "#F5F5F5",
   yellow: "#FFF3B0",
   pink: "#FFD6E0",
   blue: "#C5E8FF",
@@ -42,10 +42,11 @@ export function PaperCard({
   onClick
 }: PaperCardProps) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const bgColor = isDark ? darkColors[color] : lightColors[color];
-  const borderColor = isDark ? "#606060" : "#1A1A1A";
-  const shadowColor = isDark ? "#404040" : "#1A1A1A";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : primaryColor;
+  const shadowColor = isDark ? "rgba(0,0,0,0.3)" : primaryColor;
   const textureClass = isDark ? "paper-texture-dark" : "paper-texture";
 
   return (

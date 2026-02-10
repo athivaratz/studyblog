@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, Plus, X, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useTodos } from "@/hooks/useFirebaseData";
-import { useTheme } from "@/contexts";
+import { useTheme, usePrimaryColor } from "@/contexts";
 
 interface TodoWidgetProps {
   className?: string;
@@ -17,6 +17,7 @@ const colors = {
 
 export function TodoWidget({ className = "" }: TodoWidgetProps) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const { todos, loading, addTodo, toggleTodo, removeTodo } = useTodos();
   const [newTodoText, setNewTodoText] = useState("");
@@ -63,7 +64,7 @@ export function TodoWidget({ className = "" }: TodoWidgetProps) {
 
   // Theme-aware colors
   const bgColor = isDark ? "#4A4530" : "#FFF3B0";
-  const borderColor = isDark ? "#606060" : "#1A1A1A";
+  const borderColor = isDark ? "#606060" : primaryColor;
   const shadowColor = isDark ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0.15)";
   const tapeColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.7)";
 
@@ -182,7 +183,7 @@ export function TodoWidget({ className = "" }: TodoWidgetProps) {
           style={{
             backgroundColor: isDark ? '#354D35' : '#D4F5D4',
             border: `2px solid ${borderColor}`,
-            boxShadow: `2px 2px 0px ${isDark ? '#404040' : '#1A1A1A'}`,
+            boxShadow: `2px 2px 0px ${isDark ? '#404040' : primaryColor}`,
           }}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}

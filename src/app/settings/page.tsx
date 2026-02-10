@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Navbar, MobileHeader, LoadingScreen } from "@/components/layout";
 import { FolderCard } from "@/components/ui";
 import { IPodPlayer, ClockTimerWidget, MobileUtilities } from "@/components/widgets";
-import { TutorialOverlay, useTutorial } from "@/components/tutorial/TutorialOverlay";
+import { useTutorial } from "@/components/tutorial/TutorialOverlay";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, usePrimaryColor, useCustomColors } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -666,7 +666,7 @@ function SettingsDashboard() {
                 <SettingItem
                   icon={<Heart className="w-5 h-5 text-red-500" />}
                   label="สร้างโดย"
-                  value="studyblog Team"
+                  value="Studyblog Team"
                 />
               </div>
             </FolderCard>
@@ -696,7 +696,15 @@ function SettingsDashboard() {
 
             {/* Footer */}
             <p className="text-center font-kanit text-xs" style={{ color: textFaint }}>
-              © 2025 studyblog - Academic Organizer
+              © 2026 Studyblog - By{" "}
+              <a
+                href="https://itsim.tech"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline"
+              >
+                Athivaratz
+              </a>
             </p>
           </div>
         </div>
@@ -747,8 +755,6 @@ export default function SettingsPage() {
 
   return (
     <>
-      <TutorialOverlay />
-
       <MobileUtilities
         isOpen={showMobileUtilities}
         onClose={() => setShowMobileUtilities(false)}

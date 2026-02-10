@@ -1,9 +1,10 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, usePrimaryColor } from "@/contexts";
-import { LogIn, LogOut, User, Loader2 } from "lucide-react";
+import { LogIn, LogOut, User, Loader2, AlertTriangle } from "lucide-react";
 
 interface LoginButtonProps {
   className?: string;
@@ -11,7 +12,7 @@ interface LoginButtonProps {
 }
 
 export function LoginButton({ className = "", variant = "full" }: LoginButtonProps) {
-  const { user, userProfile, loading, signInWithGoogle, signOut } = useAuth();
+  const { user, userProfile, loading, signInWithGoogle, signOut, isWebView } = useAuth();
   const { theme } = useTheme();
   const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
@@ -20,6 +21,16 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
   const avatarBg = primaryColor;
+  const [showWebViewWarning, setShowWebViewWarning] = useState(false);
+
+  const handleSignIn = async () => {
+    if (isWebView) {
+      setShowWebViewWarning(true);
+      setTimeout(() => setShowWebViewWarning(false), 4000);
+      // Still attempt sign-in (redirect fallback)
+    }
+    await signInWithGoogle();
+  };
 
   if (loading) {
     return (
@@ -72,7 +83,7 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
           onClick={signOut}
           className="flex items-center gap-2 px-2 lg:px-3 py-1.5 lg:py-2 rounded-lg font-kanit text-sm text-white font-medium cursor-pointer"
           style={{
-            backgroundColor: "#FF6B6B",
+            backgroundColor: primaryColor,
             border: `2px solid ${borderColor}`,
             boxShadow: `2px 2px 0px ${shadowColor}`,
           }}
@@ -87,9 +98,29 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
   }
 
   return (
-    <motion.button
-      onClick={signInWithGoogle}
-      className={`flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg font-kanit text-xs lg:text-sm font-medium cursor-pointer ${className}`}
+    <>
+      <AnimatePresence>
+        {showWebViewWarning && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="fixed top-4 left-4 right-4 z-50 p-3 rounded-xl border-2 flex items-center gap-2"
+            style={{
+              backgroundColor: isDark ? "#4D3A2A" : "#FFF3CD",
+              borderColor: isDark ? "#FF9800" : "#FFC107",
+            }}
+          >
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: "#FFC107" }} />
+            <p className="font-kanit text-xs" style={{ color: isDark ? "#FFD54F" : "#856404" }}>
+              กรุณาเปิดใน Chrome/Safari เพื่อเข้าสู่ระบบ
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <motion.button
+        onClick={handleSignIn}
+        className={`flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg font-kanit text-xs lg:text-sm font-medium cursor-pointer ${className}`}
       style={{
         backgroundColor: isDark ? "#2D2D2D" : "#FFFFFF",
         border: `2px solid ${borderColor}`,
@@ -122,5 +153,6 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
       <span className="hidden sm:inline">เข้าสู่ระบบด้วย Google</span>
       <span className="sm:hidden">เข้าสู่ระบบ</span>
     </motion.button>
+    </>
   );
 }

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DesktopLayout, Navbar } from "@/components/layout";
 import { PaperCard, RetroButton, ConfirmDialog } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useHomework, useSubjects } from "@/hooks/useFirebaseData";
 import { formatDueDateShort, getUrgentThreshold } from "@/lib/utils";
@@ -23,6 +23,7 @@ import { useState } from "react";
 export default function HomeworkPage() {
   const { user, loading: authLoading } = useAuth();
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const {
     pendingHomework,
@@ -42,12 +43,12 @@ export default function HomeworkPage() {
   const [filter, setFilter] = useState<"all" | "pending" | "urgent" | "completed">("all");
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; homeworkId: string | null }>({ show: false, homeworkId: null });
 
-  const bgColor = isDark ? "#1A1A1A" : "#FFF8E7";
+  const bgColor = isDark ? "#1A1A1A" : "#F5F5F5";
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
   const textSubtle = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
   const textFaint = isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)";
-  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#1A1A1A";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : primaryColor;
   const borderMuted = isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)";
   const cardBg = isDark ? "#2D2D2D" : "#FFFFFF";
 
@@ -75,7 +76,7 @@ export default function HomeworkPage() {
         className="min-h-screen flex items-center justify-center"
         style={{ backgroundColor: bgColor }}
       >
-        <Loader2 className="w-8 h-8 animate-spin text-[#FF6B6B]" />
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: primaryColor }} />
       </div>
     );
   }
@@ -124,7 +125,7 @@ export default function HomeworkPage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-felipa text-3xl flex items-center gap-2" style={{ color: textColor }}>
-                <ClipboardList className="w-7 h-7 text-[#FF6B6B]" />
+                <ClipboardList className="w-7 h-7" style={{ color: primaryColor }} />
                 การบ้านทั้งหมด
               </h2>
               <RetroButton
@@ -199,7 +200,7 @@ export default function HomeworkPage() {
             {/* Homework List */}
             {homeworkLoading ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-[#FF6B6B]" />
+                <Loader2 className="w-8 h-8 animate-spin" style={{ color: primaryColor }} />
               </div>
             ) : filteredHomework.length > 0 ? (
               <div className="space-y-3">
@@ -268,7 +269,7 @@ export default function HomeworkPage() {
                           <div
                             className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-kanit border-2"
                             style={{
-                              borderColor: isDark ? "rgba(255,255,255,0.3)" : "#1A1A1A",
+                              borderColor: isDark ? "rgba(255,255,255,0.3)" : primaryColor,
                               backgroundColor: isOverdue ? "#EF4444" : isUrgent ? "#FF6B6B" : bgColors.green,
                               color: isOverdue || isUrgent ? "#FFFFFF" : textColor
                             }}
@@ -355,6 +356,7 @@ function AddHomeworkModal({
   onAdd: (data: { title: string; subjectId: string; dueDate: Date; description?: string; urgent?: boolean }) => Promise<void>;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [title, setTitle] = useState("");
   const [subjectId, setSubjectId] = useState(subjects[0]?.id || "");
@@ -364,8 +366,8 @@ function AddHomeworkModal({
 
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
-  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#1A1A1A";
-  const inputBg = isDark ? "#1A1A1A" : "#FFFFFF";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : primaryColor;
+  const inputBg = isDark ? "#2D2D2D" : "#FFFFFF";
 
   const handleSubmit = async () => {
     if (!title.trim() || !subjectId || !dueDate) return;
@@ -409,7 +411,7 @@ function AddHomeworkModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="เช่น แบบฝึกหัดหน้า 42"
-              className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+              className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
               style={{ backgroundColor: inputBg, borderColor: borderColor, color: textColor }}
             />
           </div>
@@ -420,7 +422,7 @@ function AddHomeworkModal({
             <select
               value={subjectId}
               onChange={(e) => setSubjectId(e.target.value)}
-              className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+              className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
               style={{ backgroundColor: inputBg, borderColor: borderColor, color: textColor }}
             >
               {subjects.length === 0 ? (
@@ -442,7 +444,7 @@ function AddHomeworkModal({
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
+              className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
               style={{ backgroundColor: inputBg, borderColor: borderColor, color: textColor }}
             />
           </div>
@@ -455,7 +457,7 @@ function AddHomeworkModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="รายละเอียดเพิ่มเติม..."
               rows={3}
-              className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[#FF6B6B] resize-none"
+              className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none"
               style={{ backgroundColor: inputBg, borderColor: borderColor, color: textColor }}
             />
           </div>

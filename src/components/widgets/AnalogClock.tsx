@@ -146,7 +146,7 @@ export function AnalogClock({
           style={{
             width: 2,
             height: size * 0.4,
-            backgroundColor: "#FF6B6B",
+            backgroundColor: primaryColor,
             left: "50%",
             bottom: "50%",
             marginLeft: -1,

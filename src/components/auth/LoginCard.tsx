@@ -1,27 +1,51 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { PaperCard } from "@/components/ui";
-import { Sparkles, BookOpen, Calendar, Brain } from "lucide-react";
+import { Sparkles, BookOpen, Calendar, Brain, ExternalLink, Copy, Check, AlertTriangle } from "lucide-react";
 
 export function LoginCard() {
-  const { signInWithGoogle, loading } = useAuth();
+  const { signInWithGoogle, loading, isWebView } = useAuth();
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
+  const [copied, setCopied] = useState(false);
 
   // Theme colors
-  const pageBg = isDark ? "#1A1A1A" : "#FFF8E7";
+  const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
   const decorOpacity = isDark ? 0.6 : 1;
   const badgeBg = isDark ? "#4D4A2A" : "#FFE066";
-  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#000000";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : primaryColor;
   const textColor = isDark ? "#FFFFFF" : "#000000";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
   const btnBg = isDark ? "#3D3D3D" : "#FFFFFF";
   const btnHoverBg = isDark ? "#4D4D4D" : "#F9FAFB";
-  const boxShadow = isDark ? "none" : "4px 4px 0 #000";
-  const spinnerBorder = isDark ? "#FFFFFF" : "#000000";
+  const boxShadow = isDark ? "none" : `4px 4px 0 ${primaryColor}`;
+  const spinnerBorder = isDark ? "#FFFFFF" : primaryColor;
+  const warningBg = isDark ? "#4D3A2A" : "#FFF3CD";
+  const warningBorder = isDark ? "#FF9800" : "#FFC107";
+  const warningText = isDark ? "#FFD54F" : "#856404";
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for browsers that don't support clipboard API
+      const textArea = document.createElement("textarea");
+      textArea.value = window.location.href;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: pageBg }}>
@@ -76,11 +100,7 @@ export function LoginCard() {
             transition={{ delay: 0.2 }}
           >
             <div 
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 mb-4"
-              style={{ backgroundColor: badgeBg, borderColor }}
             >
-              <Sparkles className="w-5 h-5" style={{ color: textColor }} />
-              <span className="font-kanit text-sm font-medium" style={{ color: textColor }}>Y2K Academic</span>
             </div>
             <h1 className="font-felipa text-5xl mb-2" style={{ color: textColor }}>studyblog</h1>
             <p className="font-kanit" style={{ color: textMuted }}>
@@ -89,6 +109,71 @@ export function LoginCard() {
           </motion.div>
 
 
+
+          {/* WebView Warning */}
+          <AnimatePresence>
+            {isWebView && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-4 p-4 rounded-xl border-2"
+                style={{
+                  backgroundColor: warningBg,
+                  borderColor: warningBorder,
+                }}
+              >
+                <div className="flex items-start gap-2 mb-2">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: warningBorder }} />
+                  <p className="font-kanit text-sm font-medium" style={{ color: warningText }}>
+                    เบราว์เซอร์ในแอปไม่รองรับการเข้าสู่ระบบ Google
+                  </p>
+                </div>
+                <p className="font-kanit text-xs mb-3" style={{ color: warningText }}>
+                  กรุณาเปิดลิงก์นี้ใน Chrome หรือ Safari เพื่อเข้าสู่ระบบ
+                </p>
+                <div className="flex gap-2">
+                  <motion.button
+                    onClick={handleCopyLink}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border-2 font-kanit text-xs font-medium cursor-pointer"
+                    style={{
+                      backgroundColor: isDark ? "#3D3D3D" : "#FFFFFF",
+                      borderColor: warningBorder,
+                      color: warningText,
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>คัดลอกแล้ว!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>คัดลอกลิงก์</span>
+                      </>
+                    )}
+                  </motion.button>
+                  <motion.a
+                    href={window?.location?.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border-2 font-kanit text-xs font-medium cursor-pointer no-underline"
+                    style={{
+                      backgroundColor: warningBorder,
+                      borderColor: warningBorder,
+                      color: isDark ? "#1A1A1A" : "#1A1A1A",
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>เปิดในเบราว์เซอร์</span>
+                  </motion.a>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Login Button */}
           <motion.button

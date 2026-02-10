@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { User } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 
 interface IDCardProps {
   name: string;
@@ -23,18 +23,19 @@ export function IDCard({
 }: IDCardProps) {
   const displayPhoto = photoURL || avatar;
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
 
   // Theme colors
   const cardBg = isDark ? "#2D2D2D" : undefined;
-  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#000000";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : primaryColor;
   const headerGradient = isDark 
     ? "linear-gradient(to right, #5C3A42, #2A3A4D, #3D2A4D)"
     : "linear-gradient(to right, #FFD6E0, #C5E8FF, #E8D5F2)";
   const textColor = isDark ? "#FFFFFF" : "#000000";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
   const schoolText = isDark ? "rgba(255,255,255,0.8)" : "rgba(0,0,0,0.8)";
-  const avatarBg = isDark ? "#3D3A2A" : "#F5E6D3";
+  const avatarBg = isDark ? "#3D3A2A" : "#EBEBEB";
   const iconColor = isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)";
   const barcodeColor = isDark ? "#FFFFFF" : "#000000";
   
@@ -49,7 +50,7 @@ export function IDCard({
       animate={{ opacity: 1, rotateY: 0 }}
       whileHover={{ 
         scale: 1.02,
-        boxShadow: "6px 6px 0px #1A1A1A"
+        boxShadow: `6px 6px 0px ${primaryColor}`
       }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >

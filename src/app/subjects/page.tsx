@@ -4,7 +4,7 @@ import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { DesktopLayout, Navbar } from "@/components/layout";
 import { PaperCard, RetroButton, ConfirmDialog } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
 import { useSubjects } from "@/hooks/useFirebaseData";
 import { SubjectWithStats } from "@/contexts/SubjectContext";
@@ -41,6 +41,7 @@ const iconMap: Record<string, React.ReactNode> = {
 export default function SubjectsPage() {
   const { user, loading: authLoading } = useAuth();
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const { 
     subjectsWithStats, 
@@ -62,12 +63,12 @@ export default function SubjectsPage() {
     setOrderedSubjects(subjectsWithStats);
   }, [subjectsWithStats]);
 
-  const bgColor = isDark ? "#1A1A1A" : "#FFF8E7";
+  const bgColor = isDark ? "#1A1A1A" : "#F5F5F5";
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
   const textFaint = isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)";
-  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#1A1A1A";
-  const cardBg = isDark ? "#3D3A2A" : "#FFF3B0";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : primaryColor;
+  const cardBg = isDark ? "#3D3A2A" : "#FFFFFF";
 
   if (authLoading) {
     return (
@@ -75,7 +76,7 @@ export default function SubjectsPage() {
         className="min-h-screen flex items-center justify-center"
         style={{ backgroundColor: bgColor }}
       >
-        <Loader2 className="w-8 h-8 animate-spin text-[#FF6B6B]" />
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: primaryColor }} />
       </div>
     );
   }
@@ -144,7 +145,7 @@ export default function SubjectsPage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <h2 className="font-felipa text-3xl flex items-center gap-2" style={{ color: textColor }}>
-                <BookOpen className="w-7 h-7 text-[#FF6B6B]" />
+                <BookOpen className="w-7 h-7" style={{ color: primaryColor }} />
                 ศูนย์กลางจัดการวิชา
               </h2>
               <div className="flex gap-2">
@@ -190,7 +191,7 @@ export default function SubjectsPage() {
 
             {subjectsLoading ? (
               <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-[#FF6B6B]" />
+                <Loader2 className="w-8 h-8 animate-spin" style={{ color: primaryColor }} />
               </div>
             ) : orderedSubjects.length > 0 ? (
               isReordering ? (
@@ -315,10 +316,11 @@ function StatCard({
   color: string;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
-  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#1A1A1A";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : primaryColor;
 
   const bgColors: Record<string, string> = {
     yellow: isDark ? "#4D4A2A" : "#FFF3B0",
@@ -333,7 +335,7 @@ function StatCard({
       style={{ 
         backgroundColor: bgColors[color], 
         borderColor,
-        boxShadow: isDark ? "none" : "3px 3px 0px #1A1A1A"
+        boxShadow: isDark ? "none" : `3px 3px 0px ${primaryColor}`
       }}
     >
       <div className="flex items-center gap-2 mb-1" style={{ color: textMuted }}>
@@ -363,6 +365,7 @@ function SubjectCard({
   onDelete: () => void;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -370,7 +373,7 @@ function SubjectCard({
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
   const textFaint = isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)";
-  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#1A1A1A";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : primaryColor;
   const iconBg = isDark ? "#1A1A1A" : "#FFFFFF";
   const progressBg = isDark ? "#1A1A1A" : "#FFFFFF";
   const menuBg = isDark ? "#2D2D2D" : "#FFFFFF";
@@ -404,7 +407,7 @@ function SubjectCard({
       style={{
         backgroundColor: bgColor,
         borderColor: borderColor,
-        boxShadow: isDark ? "none" : "4px 4px 0px #1A1A1A"
+        boxShadow: isDark ? "none" : `4px 4px 0px ${primaryColor}`
       }}
       whileHover={isReordering ? {} : { scale: 1.02, y: -4 }}
       whileTap={isReordering ? {} : { scale: 0.98 }}
@@ -457,7 +460,7 @@ function SubjectCard({
                   style={{ 
                     backgroundColor: menuBg, 
                     borderColor,
-                    boxShadow: isDark ? "0 4px 12px rgba(0,0,0,0.3)" : "4px 4px 0px #1A1A1A"
+                    boxShadow: isDark ? "0 4px 12px rgba(0,0,0,0.3)" : `4px 4px 0px ${primaryColor}`
                   }}
                 >
                   <button
@@ -532,6 +535,7 @@ function SubjectModal({
   subjectsCount: number;
 }) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [name, setName] = useState(subject?.name || "");
   const [selectedIcon, setSelectedIcon] = useState(subject?.icon || "book");
@@ -540,7 +544,7 @@ function SubjectModal({
 
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
-  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#1A1A1A";
+  const borderColor = isDark ? "rgba(255,255,255,0.2)" : primaryColor;
   const inputBg = isDark ? "#1A1A1A" : "#FFFFFF";
 
   const bgColors: Record<string, string> = {
@@ -608,8 +612,8 @@ function SubjectModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="เช่น คณิตศาสตร์"
-              className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2 focus:ring-[#FF6B6B]"
-              style={{ backgroundColor: inputBg, borderColor: borderColor, color: textColor }}
+              className="w-full px-4 py-3 border-2 rounded-xl font-kanit focus:outline-none focus:ring-2"
+              style={{ backgroundColor: inputBg, borderColor: borderColor, color: textColor, "--tw-ring-color": primaryColor } as React.CSSProperties}
               autoFocus
             />
           </div>

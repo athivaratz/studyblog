@@ -99,6 +99,15 @@ service cloud.firestore {
     }
 
     // =====================
+    // QUIZ SETS
+    // =====================
+    match /quizSets/{setId} {
+      allow read: if isAuthenticated() && isResourceOwner();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && isResourceOwner();
+    }
+
+    // =====================
     // QUIZ BANKS (for portal)
     // =====================
     match /quizBanks/{bankId} {
@@ -116,7 +125,10 @@ service cloud.firestore {
       // Anyone can read shared quizzes by share code
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.createdBy == request.auth.uid;
-      allow update: if isAuthenticated() && isResourceOwner();
+      // Owner can update anything; others can only increment playCount
+      allow update: if isAuthenticated() && 
+        (resource.data.createdBy == request.auth.uid || 
+         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['playCount'])));
       allow delete: if isAuthenticated() && resource.data.createdBy == request.auth.uid;
     }
 

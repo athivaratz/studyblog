@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Navbar, MobileHeader, LoadingScreen } from "@/components/layout";
 import { FolderCard, ConfirmDialog } from "@/components/ui";
 import { ClockTimerWidget, IPodPlayer, MobileUtilities } from "@/components/widgets";
-import { TutorialOverlay } from "@/components/tutorial";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 import { LoginCard } from "@/components/auth";
@@ -557,8 +557,6 @@ export default function TodoPage() {
 
   return (
     <>
-      <TutorialOverlay />
-
       <MobileUtilities
         isOpen={showMobileUtilities}
         onClose={() => setShowMobileUtilities(false)}

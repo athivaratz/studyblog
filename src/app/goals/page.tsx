@@ -170,7 +170,7 @@ export default function GoalsPage() {
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="font-felipa text-2xl" style={{ color: "#FF6B6B" }}>
+                  <p className="font-felipa text-2xl" style={{ color: primaryColor }}>
                     {goals.length > 0
                       ? Math.round((completedGoals.length / goals.length) * 100)
                       : 0}

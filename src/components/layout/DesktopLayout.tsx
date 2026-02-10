@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
 
 /**
  * ================================================
@@ -26,9 +26,10 @@ interface DesktopLayoutProps {
 
 export function DesktopLayout({ children, sidebar }: DesktopLayoutProps) {
   const { theme } = useTheme();
+  const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
 
-  const bgColor = isDark ? "#1A1A1A" : "#FFF8E7";
+  const bgColor = isDark ? "#1A1A1A" : "#F5F5F5";
   const gridOpacity = isDark ? 0.05 : 0.03;
   const decorOpacity = isDark ? 0.6 : 1;
   const corkGradient = isDark 
@@ -36,10 +37,10 @@ export function DesktopLayout({ children, sidebar }: DesktopLayoutProps) {
     : "linear-gradient(to bottom, rgba(181, 101, 29, 0.2), transparent)";
 
   const lightGradient = `
-    radial-gradient(circle at 20% 80%, rgba(255,211,224,0.3) 0%, transparent 40%),
-    radial-gradient(circle at 80% 20%, rgba(197,232,255,0.3) 0%, transparent 40%),
-    radial-gradient(circle at 50% 50%, rgba(232,213,242,0.2) 0%, transparent 60%),
-    linear-gradient(135deg, #F5E6D3 0%, #FFF8E7 50%, #F5E6D3 100%)
+    radial-gradient(circle at 20% 80%, rgba(197,232,255,0.3) 0%, transparent 40%),
+    radial-gradient(circle at 80% 20%, rgba(197,232,255,0.2) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(232,213,242,0.15) 0%, transparent 60%),
+    linear-gradient(135deg, #ECECEC 0%, #F5F5F5 50%, #ECECEC 100%)
   `;
 
   const darkGradient = `
