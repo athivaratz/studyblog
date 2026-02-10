@@ -56,9 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Detect browser environment on mount
   useEffect(() => {
+    const mobile = isMobileDevice();
     setIsWebView(isInAppBrowser());
-    setIsMobile(isMobileDevice());
-    setIsSupportedBrowser(isSupportedMobileBrowser() || !isMobileDevice());
+    setIsMobile(mobile);
+    setIsSupportedBrowser(isSupportedMobileBrowser() || !mobile);
   }, []);
 
   // Handle redirect result (for in-app browser fallback)
