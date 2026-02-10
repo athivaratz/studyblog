@@ -8,11 +8,14 @@ import { PaperCard } from "@/components/ui";
 import { Sparkles, BookOpen, Calendar, Brain, ExternalLink, Copy, Check, AlertTriangle } from "lucide-react";
 
 export function LoginCard() {
-  const { signInWithGoogle, loading, isWebView } = useAuth();
+  const { signInWithGoogle, loading, isWebView, isMobile, isSupportedBrowser } = useAuth();
   const { theme } = useTheme();
   const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [copied, setCopied] = useState(false);
+
+  // Determine if we should show warning
+  const showWarning = isWebView || (isMobile && !isSupportedBrowser);
 
   // Theme colors
   const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
@@ -110,9 +113,9 @@ export function LoginCard() {
 
 
 
-          {/* WebView Warning */}
+          {/* Browser Warning */}
           <AnimatePresence>
-            {isWebView && (
+            {showWarning && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -126,7 +129,9 @@ export function LoginCard() {
                 <div className="flex items-start gap-2 mb-2">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: warningBorder }} />
                   <p className="font-kanit text-sm font-medium" style={{ color: warningText }}>
-                    เบราว์เซอร์ในแอปไม่รองรับการเข้าสู่ระบบ Google
+                    {isWebView 
+                      ? "เบราว์เซอร์ในแอปไม่รองรับการเข้าสู่ระบบ Google"
+                      : "กรุณาใช้ Chrome หรือ Safari เท่านั้น"}
                   </p>
                 </div>
                 <p className="font-kanit text-xs mb-3" style={{ color: warningText }}>
@@ -178,18 +183,18 @@ export function LoginCard() {
           {/* Login Button */}
           <motion.button
             onClick={signInWithGoogle}
-            disabled={loading}
+            disabled={loading || showWarning}
             className="w-full flex items-center justify-center gap-3 px-6 py-4 border-3 rounded-xl font-kanit text-lg font-medium transition-all cursor-pointer"
             style={{
               backgroundColor: btnBg,
               borderColor,
               color: textColor,
               boxShadow,
-              opacity: loading ? 0.5 : 1,
-              cursor: loading ? "not-allowed" : "pointer"
+              opacity: (loading || showWarning) ? 0.5 : 1,
+              cursor: (loading || showWarning) ? "not-allowed" : "pointer"
             }}
-            whileHover={!loading ? { scale: 1.02, y: -2, backgroundColor: btnHoverBg } : undefined}
-            whileTap={!loading ? { scale: 0.98 } : undefined}
+            whileHover={!(loading || showWarning) ? { scale: 1.02, y: -2, backgroundColor: btnHoverBg } : undefined}
+            whileTap={!(loading || showWarning) ? { scale: 0.98 } : undefined}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}

@@ -12,7 +12,7 @@ interface LoginButtonProps {
 }
 
 export function LoginButton({ className = "", variant = "full" }: LoginButtonProps) {
-  const { user, userProfile, loading, signInWithGoogle, signOut, isWebView } = useAuth();
+  const { user, userProfile, loading, signInWithGoogle, signOut, isWebView, isMobile, isSupportedBrowser } = useAuth();
   const { theme } = useTheme();
   const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
@@ -21,13 +21,16 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
   const avatarBg = primaryColor;
-  const [showWebViewWarning, setShowWebViewWarning] = useState(false);
+  const [showBrowserWarning, setShowBrowserWarning] = useState(false);
+  
+  // Determine if we should show warning
+  const shouldWarn = isWebView || (isMobile && !isSupportedBrowser);
 
   const handleSignIn = async () => {
-    if (isWebView) {
-      setShowWebViewWarning(true);
-      setTimeout(() => setShowWebViewWarning(false), 4000);
-      // Still attempt sign-in (redirect fallback)
+    if (shouldWarn) {
+      setShowBrowserWarning(true);
+      setTimeout(() => setShowBrowserWarning(false), 5000);
+      return; // Don't attempt sign-in if browser is not supported
     }
     await signInWithGoogle();
   };
@@ -100,7 +103,7 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
   return (
     <>
       <AnimatePresence>
-        {showWebViewWarning && (
+        {showBrowserWarning && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -113,7 +116,9 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
           >
             <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: "#FFC107" }} />
             <p className="font-kanit text-xs" style={{ color: isDark ? "#FFD54F" : "#856404" }}>
-              กรุณาเปิดใน Chrome/Safari เพื่อเข้าสู่ระบบ
+              {isWebView 
+                ? "กรุณาเปิดใน Chrome/Safari เพื่อเข้าสู่ระบบ"
+                : "กรุณาใช้ Chrome หรือ Safari เท่านั้น"}
             </p>
           </motion.div>
         )}

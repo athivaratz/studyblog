@@ -13,7 +13,11 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
 import { initializeNewUser } from "@/lib/firebaseServices";
-import { isInAppBrowser } from "@/lib/utils";
+import { 
+  isInAppBrowser, 
+  isMobileDevice, 
+  isSupportedMobileBrowser 
+} from "@/lib/utils";
 
 interface UserProfile {
   uid: string;
@@ -32,6 +36,8 @@ interface AuthContextType {
   loading: boolean;
   initialized: boolean;
   isWebView: boolean;
+  isMobile: boolean;
+  isSupportedBrowser: boolean;
   signInWithGoogle: () => Promise<UserCredential | null>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -45,10 +51,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const [isWebView, setIsWebView] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSupportedBrowser, setIsSupportedBrowser] = useState(true);
 
-  // Detect in-app browser on mount
+  // Detect browser environment on mount
   useEffect(() => {
     setIsWebView(isInAppBrowser());
+    setIsMobile(isMobileDevice());
+    setIsSupportedBrowser(isSupportedMobileBrowser() || !isMobileDevice());
   }, []);
 
   // Handle redirect result (for in-app browser fallback)
@@ -117,20 +127,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  // Sign in with Google (with in-app browser fallback)
+  // Sign in with Google (use redirect on mobile, popup on desktop)
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
     try {
-      // Try popup first
+      // On mobile devices or in-app browsers, use redirect directly
+      if (isMobile || isWebView) {
+        await signInWithRedirect(auth, googleProvider);
+        return null; // Will complete after redirect
+      }
+      
+      // On desktop, try popup first
       const result = await signInWithPopup(auth, googleProvider);
       return result;
     } catch (error: unknown) {
       const firebaseError = error as { code?: string };
-      // If popup is blocked or fails in WebView, try redirect
+      // If popup is blocked or fails, fallback to redirect
       if (
         firebaseError.code === "auth/popup-blocked" ||
         firebaseError.code === "auth/popup-closed-by-browser" ||
-        firebaseError.code === "auth/cancelled-popup-request" ||
-        isWebView
+        firebaseError.code === "auth/cancelled-popup-request"
       ) {
         try {
           await signInWithRedirect(auth, googleProvider);
@@ -171,6 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     initialized,
     isWebView,
+    isMobile,
+    isSupportedBrowser,
     signInWithGoogle,
     signOut,
     updateProfile,
@@ -190,6 +207,8 @@ const defaultAuthContext: AuthContextType = {
   loading: true,
   initialized: false,
   isWebView: false,
+  isMobile: false,
+  isSupportedBrowser: true,
   signInWithGoogle: async () => null,
   signOut: async () => {},
   updateProfile: async () => {},

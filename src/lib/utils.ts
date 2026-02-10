@@ -94,3 +94,46 @@ export function isInAppBrowser(): boolean {
 
   return isWebView;
 }
+
+/**
+ * Check if the current device is mobile (phone or tablet)
+ */
+export function isMobileDevice(): boolean {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+
+  const ua = navigator.userAgent || navigator.vendor || "";
+
+  // Check for mobile device indicators
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+}
+
+/**
+ * Check if the current browser is Chrome on mobile
+ */
+export function isMobileChrome(): boolean {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+
+  const ua = navigator.userAgent || navigator.vendor || "";
+
+  // Chrome on Android
+  return isMobileDevice() && /Chrome/i.test(ua) && /Android/i.test(ua) && !/Edg/i.test(ua);
+}
+
+/**
+ * Check if the current browser is Safari on iOS
+ */
+export function isMobileSafari(): boolean {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
+
+  const ua = navigator.userAgent || navigator.vendor || "";
+
+  // Safari on iOS (must have Safari in UA and not be in-app browser)
+  return /iPhone|iPad|iPod/.test(ua) && /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua);
+}
+
+/**
+ * Check if the current browser is a supported mobile browser (Chrome or Safari)
+ */
+export function isSupportedMobileBrowser(): boolean {
+  return isMobileChrome() || isMobileSafari();
+}
