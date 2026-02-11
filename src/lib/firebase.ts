@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence, Auth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -18,6 +18,33 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
+// Initialize auth persistence function
+// This function must be awaited before any auth operations to ensure persistence is configured
+// It's idempotent - safe to call multiple times, will only execute once
+let persistenceInitialized = false;
+
+const initializeAuthPersistence = async (authInstance: Auth): Promise<void> => {
+  if (persistenceInitialized) return;
+  
+  try {
+    await setPersistence(authInstance, browserLocalPersistence);
+    console.log("Firebase Auth persistence set to browserLocalPersistence");
+    persistenceInitialized = true;
+  } catch (error) {
+    console.error("Failed to set auth persistence - auth will use default cookie-based persistence:", error);
+    console.warn("Note: Default cookie-based persistence may not work in browsers with third-party cookie restrictions (Brave, Firefox with ETP)");
+    // Mark as initialized even on failure to prevent retries
+    // Auth operations will proceed with Firebase's default persistence behavior
+    persistenceInitialized = true;
+  }
+};
+
+// Start persistence initialization immediately when module loads in browser
+// This is fire-and-forget - callers MUST await initializeAuthPersistence() before auth operations
+if (typeof window !== 'undefined') {
+  initializeAuthPersistence(auth);
+}
+
 // Google Provider with Thai locale
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
@@ -30,4 +57,4 @@ googleProvider.setCustomParameters({
 // googleProvider.addScope("https://www.googleapis.com/auth/classroom.coursework.me.readonly");
 // googleProvider.addScope("https://www.googleapis.com/auth/calendar");
 
-export { app, auth, db, storage, googleProvider };
+export { app, auth, db, storage, googleProvider, initializeAuthPersistence };

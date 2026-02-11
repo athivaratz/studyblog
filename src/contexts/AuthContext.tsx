@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import {
   User,
-  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   signOut as firebaseSignOut,
@@ -11,7 +10,7 @@ import {
   UserCredential,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db, googleProvider } from "@/lib/firebase";
+import { auth, db, googleProvider, initializeAuthPersistence } from "@/lib/firebase";
 import { initializeNewUser } from "@/lib/firebaseServices";
 import { 
   isInAppBrowser, 
@@ -68,7 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Handle redirect result (for in-app browser fallback)
   useEffect(() => {
-    getRedirectResult(auth)
+    // Ensure persistence is initialized before checking redirect result
+    initializeAuthPersistence(auth).then(() => {
+      return getRedirectResult(auth);
+    })
       .then((result) => {
         if (result) {
           // Redirect sign-in succeeded, onAuthStateChanged will handle the rest
@@ -150,48 +152,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [processingRedirect, authStateChecked]);
 
-  // Sign in with Google (use redirect on mobile, popup on desktop)
+  // Sign in with Google - always use redirect to avoid popup third-party cookie issues
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
     console.log("signInWithGoogle called:", { isMobile, isWebView, isSupportedBrowser });
     
+    // Ensure persistence is set before any sign-in operation
+    await initializeAuthPersistence(auth);
+    
     try {
-      // On mobile devices or in-app browsers, use redirect directly
-      if (isMobile || isWebView) {
-        console.log("Using redirect flow for mobile/webview");
-        setIsRedirecting(true);
-        await signInWithRedirect(auth, googleProvider);
-        console.log("signInWithRedirect called successfully");
-        // Don't reset isRedirecting here - it will reset on page reload
-        return null; // Will complete after redirect
-      }
-      
-      // On desktop, try popup first
-      console.log("Using popup flow for desktop");
-      const result = await signInWithPopup(auth, googleProvider);
-      return result;
+      // Always use redirect flow to completely avoid third-party cookie issues
+      // Popups can have cookie problems even with localStorage persistence
+      // because the OAuth flow itself may use cookies internally
+      console.log("Using redirect flow for all browsers to avoid cookie issues");
+      setIsRedirecting(true);
+      await signInWithRedirect(auth, googleProvider);
+      console.log("signInWithRedirect called successfully");
+      // Don't reset isRedirecting here - it will reset on page reload
+      return null; // Will complete after redirect
     } catch (error: unknown) {
       const firebaseError = error as { code?: string; message?: string };
       console.error("Sign-in error:", firebaseError);
       setIsRedirecting(false);
-      
-      // If popup is blocked or fails, fallback to redirect
-      if (
-        firebaseError.code === "auth/popup-blocked" ||
-        firebaseError.code === "auth/popup-closed-by-browser" ||
-        firebaseError.code === "auth/cancelled-popup-request"
-      ) {
-        try {
-          console.log("Popup failed, trying redirect");
-          setIsRedirecting(true);
-          await signInWithRedirect(auth, googleProvider);
-          // Don't reset isRedirecting here - it will reset on page reload
-          return null; // Will complete after redirect
-        } catch (redirectError) {
-          console.error("Redirect also failed:", redirectError);
-          setIsRedirecting(false);
-          return null;
-        }
-      }
       
       // Re-throw the error so it can be caught in the UI
       throw error;
