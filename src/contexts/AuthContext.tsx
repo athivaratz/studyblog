@@ -56,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isSupportedBrowser, setIsSupportedBrowser] = useState(true);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [processingRedirect, setProcessingRedirect] = useState(true); // Track if we're processing a redirect
+  const [authStateChecked, setAuthStateChecked] = useState(false); // Track if initial auth state has been checked
 
   // Detect browser environment on mount
   useEffect(() => {
@@ -75,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsRedirecting(false);
         }
         // Mark that we've finished checking for redirect
+        console.log("Redirect check complete");
         setProcessingRedirect(false);
       })
       .catch((error) => {
@@ -130,18 +132,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error("Error initializing user:", err);
         }
       }
+
+      // Mark that we've checked the auth state at least once
+      console.log("Auth state check complete");
+      setAuthStateChecked(true);
     });
 
     return () => unsubscribe();
   }, []);
 
-  // Set loading to false only after redirect processing is complete
+  // Set loading to false only after BOTH redirect processing AND auth state check are complete
   useEffect(() => {
-    if (!processingRedirect) {
-      console.log("Redirect processing complete, setting loading to false");
+    console.log("Checking loading conditions:", { processingRedirect, authStateChecked });
+    if (!processingRedirect && authStateChecked) {
+      console.log("Both conditions met, setting loading to false");
       setLoading(false);
     }
-  }, [processingRedirect]);
+  }, [processingRedirect, authStateChecked]);
 
   // Sign in with Google (use redirect on mobile, popup on desktop)
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
