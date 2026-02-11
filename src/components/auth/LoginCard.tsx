@@ -41,11 +41,10 @@ export function LoginCard() {
     try {
       setIsSigningIn(true);
       await signInWithGoogle();
-      // Note: redirect will reload the page, so no need to reset isSigningIn
     } catch (error) {
       console.error("Error during sign in:", error);
     } finally {
-      // Only reset if we're still on the page (not redirected)
+      // Reset sign-in state (redirect will reload page anyway)
       setIsSigningIn(false);
     }
   };
@@ -241,7 +240,11 @@ export function LoginCard() {
                   style={{ borderColor: spinnerBorder, borderTopColor: "transparent" }}
                 />
                 <span className="font-kanit text-sm">
-                  {isRedirecting ? "กำลังเปลี่ยนหน้า..." : "กำลังเข้าสู่ระบบ..."}
+                  {isRedirecting 
+                    ? "กำลังเปลี่ยนหน้า..." 
+                    : loading 
+                    ? "กำลังตรวจสอบ..." 
+                    : "กำลังเข้าสู่ระบบ..."}
                 </span>
               </>
             ) : (
