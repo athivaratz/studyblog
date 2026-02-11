@@ -174,14 +174,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
     console.log("signInWithGoogle called:", { isMobile, isWebView, isSupportedBrowser, persistenceSet });
     
-    // Wait for persistence to be configured before proceeding
+    // Wait for persistence to be configured before proceeding (max 2 seconds)
     // This prevents race conditions on initial page load
     if (!persistenceSet) {
       console.log("Waiting for persistence to be configured...");
-      // Give it a short time to initialize
-      await new Promise(resolve => setTimeout(resolve, 100));
+      const maxWaitTime = 2000; // 2 seconds max wait
+      const startTime = Date.now();
+      
+      while (!persistenceSet && Date.now() - startTime < maxWaitTime) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      
       if (!persistenceSet) {
-        console.warn("Persistence not yet configured, but proceeding with sign-in");
+        console.warn("Persistence setup timed out after 2s, proceeding anyway");
+      } else {
+        console.log("Persistence configured successfully");
       }
     }
     
