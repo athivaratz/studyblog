@@ -66,18 +66,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Handle redirect result (for in-app browser fallback)
   useEffect(() => {
-    setIsRedirecting(true);
     getRedirectResult(auth)
       .then((result) => {
         if (result) {
           // Redirect sign-in succeeded, onAuthStateChanged will handle the rest
           console.log("Redirect sign-in successful");
+          setIsRedirecting(false);
         }
       })
       .catch((error) => {
         console.error("Redirect sign-in error:", error);
-      })
-      .finally(() => {
         setIsRedirecting(false);
       });
   }, []);
@@ -132,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [initialized]);
+  }, []);
 
   // Sign in with Google (use redirect on mobile, popup on desktop)
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
