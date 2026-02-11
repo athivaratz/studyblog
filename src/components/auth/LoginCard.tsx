@@ -26,16 +26,10 @@ export function LoginCard() {
   const showWarning = isWebView || (isMobile && !isSupportedBrowser);
 
   const handleLoginClick = async () => {
-    console.log("Login button clicked!");
-    console.log("Loading:", loading);
-    console.log("showWarning:", showWarning);
-    console.log("isWebView:", isWebView);
-    console.log("isMobile:", isMobile);
-    console.log("isSupportedBrowser:", isSupportedBrowser);
+    console.log("Login clicked:", { loading, showWarning, isWebView, isMobile, isSupportedBrowser });
     
     try {
       await signInWithGoogle();
-      console.log("signInWithGoogle completed");
     } catch (error) {
       console.error("Error during sign in:", error);
     }

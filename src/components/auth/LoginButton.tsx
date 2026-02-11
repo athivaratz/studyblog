@@ -27,11 +27,7 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
   const shouldWarn = isWebView || (isMobile && !isSupportedBrowser);
 
   const handleSignIn = async () => {
-    console.log("LoginButton clicked!");
-    console.log("shouldWarn:", shouldWarn);
-    console.log("isWebView:", isWebView);
-    console.log("isMobile:", isMobile);
-    console.log("isSupportedBrowser:", isSupportedBrowser);
+    console.log("LoginButton clicked:", { shouldWarn, isWebView, isMobile, isSupportedBrowser });
     
     if (shouldWarn) {
       setShowBrowserWarning(true);
@@ -41,9 +37,8 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
     
     try {
       await signInWithGoogle();
-      console.log("LoginButton: signInWithGoogle completed");
     } catch (error) {
-      console.error("LoginButton: Error during sign in:", error);
+      console.error("LoginButton error:", error);
     }
   };
 
