@@ -133,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [initialized]);
+  }, []);
 
   // Set loading to false only after redirect processing is complete
   useEffect(() => {
