@@ -38,6 +38,7 @@ interface AuthContextType {
   isWebView: boolean;
   isMobile: boolean;
   isSupportedBrowser: boolean;
+  isRedirecting: boolean;
   signInWithGoogle: () => Promise<UserCredential | null>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -53,6 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isWebView, setIsWebView] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isSupportedBrowser, setIsSupportedBrowser] = useState(true);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [processingRedirect, setProcessingRedirect] = useState(true); // Track if we're processing a redirect
+  const [authStateChecked, setAuthStateChecked] = useState(false); // Track if initial auth state has been checked
 
   // Detect browser environment on mount
   useEffect(() => {
@@ -68,17 +72,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((result) => {
         if (result) {
           // Redirect sign-in succeeded, onAuthStateChanged will handle the rest
-          console.log("Redirect sign-in successful");
+          console.log("Redirect sign-in successful, user:", result.user.email);
+          setIsRedirecting(false);
         }
+        // Mark that we've finished checking for redirect
+        console.log("Redirect check complete");
+        setProcessingRedirect(false);
       })
       .catch((error) => {
         console.error("Redirect sign-in error:", error);
+        setIsRedirecting(false);
+        setProcessingRedirect(false);
       });
   }, []);
 
   // Listen to auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("Auth state changed, user:", user?.email || "null");
       setUser(user);
       
       if (user) {
@@ -122,31 +133,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      setLoading(false);
+      // Mark that we've checked the auth state at least once
+      console.log("Auth state check complete");
+      setAuthStateChecked(true);
     });
 
     return () => unsubscribe();
   }, []);
 
+  // Set loading to false only after BOTH redirect processing AND auth state check are complete
+  useEffect(() => {
+    console.log("Checking loading conditions:", { processingRedirect, authStateChecked });
+    if (!processingRedirect && authStateChecked) {
+      console.log("Both conditions met, setting loading to false");
+      setLoading(false);
+    }
+  }, [processingRedirect, authStateChecked]);
+
   // Sign in with Google (use redirect on mobile, popup on desktop)
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
-    console.log("signInWithGoogle:", { isMobile, isWebView });
+    console.log("signInWithGoogle called:", { isMobile, isWebView, isSupportedBrowser });
     
     try {
       // On mobile devices or in-app browsers, use redirect directly
       if (isMobile || isWebView) {
-        console.log("Using redirect flow");
+        console.log("Using redirect flow for mobile/webview");
+        setIsRedirecting(true);
         await signInWithRedirect(auth, googleProvider);
+        console.log("signInWithRedirect called successfully");
+        // Don't reset isRedirecting here - it will reset on page reload
         return null; // Will complete after redirect
       }
       
       // On desktop, try popup first
-      console.log("Using popup flow");
+      console.log("Using popup flow for desktop");
       const result = await signInWithPopup(auth, googleProvider);
       return result;
     } catch (error: unknown) {
-      const firebaseError = error as { code?: string };
-      console.error("Sign-in error:", firebaseError.code || error);
+      const firebaseError = error as { code?: string; message?: string };
+      console.error("Sign-in error:", firebaseError);
+      setIsRedirecting(false);
       
       // If popup is blocked or fails, fallback to redirect
       if (
@@ -156,14 +182,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ) {
         try {
           console.log("Popup failed, trying redirect");
+          setIsRedirecting(true);
           await signInWithRedirect(auth, googleProvider);
+          // Don't reset isRedirecting here - it will reset on page reload
           return null; // Will complete after redirect
         } catch (redirectError) {
           console.error("Redirect also failed:", redirectError);
+          setIsRedirecting(false);
           return null;
         }
       }
-      return null;
+      
+      // Re-throw the error so it can be caught in the UI
+      throw error;
     }
   };
 
@@ -195,6 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isWebView,
     isMobile,
     isSupportedBrowser,
+    isRedirecting,
     signInWithGoogle,
     signOut,
     updateProfile,
@@ -216,6 +248,7 @@ const defaultAuthContext: AuthContextType = {
   isWebView: false,
   isMobile: false,
   isSupportedBrowser: true,
+  isRedirecting: false,
   signInWithGoogle: async () => null,
   signOut: async () => {},
   updateProfile: async () => {},

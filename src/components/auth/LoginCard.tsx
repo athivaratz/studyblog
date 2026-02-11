@@ -8,12 +8,14 @@ import { PaperCard } from "@/components/ui";
 import { Sparkles, BookOpen, Calendar, Brain, ExternalLink, Copy, Check, AlertTriangle } from "lucide-react";
 
 export function LoginCard() {
-  const { signInWithGoogle, loading, isWebView, isMobile, isSupportedBrowser } = useAuth();
+  const { signInWithGoogle, loading, isWebView, isMobile, isSupportedBrowser, isRedirecting } = useAuth();
   const { theme } = useTheme();
   const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [copied, setCopied] = useState(false);
   const [currentUrl, setCurrentUrl] = useState("");
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Get current URL on client side only
   useEffect(() => {
@@ -26,21 +28,35 @@ export function LoginCard() {
   const showWarning = isWebView || (isMobile && !isSupportedBrowser);
 
   const handleLoginClick = async (e?: React.MouseEvent | React.TouchEvent) => {
-    // Prevent default to avoid any browser interference
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
+    console.log("Login button clicked - event type:", e?.type);
+    
+    // Don't prevent default - let the browser handle it naturally
+    // This is important for redirects to work properly
+    
+    console.log("Login clicked:", { loading, showWarning, isWebView, isMobile, isSupportedBrowser, isRedirecting });
+    
+    // Don't proceed if already loading or redirecting
+    if (loading || isSigningIn || isRedirecting) {
+      console.log("Ignoring click - already in progress");
+      return;
     }
     
-    console.log("Login clicked:", { loading, showWarning, isWebView, isMobile, isSupportedBrowser });
-    
-    // Don't proceed if already loading
-    if (loading) return;
+    setError(null); // Clear any previous errors
+    setIsSigningIn(true);
+    console.log("Starting sign in process...");
     
     try {
-      await signInWithGoogle();
-    } catch (error) {
+      const result = await signInWithGoogle();
+      console.log("signInWithGoogle completed, result:", result);
+      // If we reach here, it was a popup flow that completed
+      // For redirect flows, the page will reload before we get here
+      setIsSigningIn(false);
+    } catch (error: unknown) {
       console.error("Error during sign in:", error);
+      const firebaseError = error as { code?: string; message?: string };
+      const errorMessage = firebaseError?.message || firebaseError?.code || "เกิดข้อผิดพลาดในการเข้าสู่ระบบ";
+      setError(`เกิดข้อผิดพลาด: ${errorMessage}`);
+      setIsSigningIn(false);
     }
   };
 
@@ -157,12 +173,12 @@ export function LoginCard() {
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: warningBorder }} />
                   <p className="font-kanit text-sm font-medium" style={{ color: warningText }}>
                     {isWebView 
-                      ? "เบราว์เซอร์ในแอปไม่รองรับการเข้าสู่ระบบ Google"
-                      : "กรุณาใช้ Chrome หรือ Safari เท่านั้น"}
+                      ? "เบราว์เซอร์ในแอปอาจไม่รองรับการเข้าสู่ระบบ Google"
+                      : "แนะนำให้ใช้ Chrome หรือ Safari"}
                   </p>
                 </div>
                 <p className="font-kanit text-xs mb-3" style={{ color: warningText }}>
-                  กรุณาเปิดลิงก์นี้ใน Chrome หรือ Safari เพื่อเข้าสู่ระบบ
+                  หากเข้าสู่ระบบไม่ได้ กรุณาเปิดลิงก์นี้ใน Chrome หรือ Safari
                 </p>
                 <div className="flex gap-2">
                   <motion.button
@@ -207,32 +223,63 @@ export function LoginCard() {
             )}
           </AnimatePresence>
 
+          {/* Error Message */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-4 p-4 rounded-xl border-2"
+                style={{
+                  backgroundColor: isDark ? "#5C2A2A" : "#FFE5E5",
+                  borderColor: "#FF6B6B",
+                }}
+              >
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#FF6B6B" }} />
+                  <p className="font-kanit text-sm" style={{ color: isDark ? "#FFB4B4" : "#D32F2F" }}>
+                    {error}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Login Button */}
           <motion.button
             onClick={handleLoginClick}
-            onTouchEnd={handleLoginClick}
-            disabled={loading}
+            disabled={loading || isSigningIn || isRedirecting}
             className="w-full flex items-center justify-center gap-3 px-6 py-4 border-2 rounded-xl font-kanit text-lg font-medium transition-all cursor-pointer touch-manipulation"
             style={{
               backgroundColor: btnBg,
               borderColor,
               color: textColor,
               boxShadow,
-              opacity: loading ? 0.5 : 1,
-              cursor: loading ? "not-allowed" : "pointer",
+              opacity: (loading || isSigningIn || isRedirecting) ? 0.5 : 1,
+              cursor: (loading || isSigningIn || isRedirecting) ? "not-allowed" : "pointer",
               WebkitTapHighlightColor: "transparent",
             }}
-            whileHover={!loading ? { scale: 1.02, y: -2, backgroundColor: btnHoverBg } : undefined}
-            whileTap={!loading ? { scale: 0.98 } : undefined}
+            whileHover={!(loading || isSigningIn || isRedirecting) ? { scale: 1.02, y: -2, backgroundColor: btnHoverBg } : undefined}
+            whileTap={!(loading || isSigningIn || isRedirecting) ? { scale: 0.98 } : undefined}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            {loading ? (
-              <div 
-                className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin"
-                style={{ borderColor: spinnerBorder, borderTopColor: "transparent" }}
-              />
+            {(loading || isSigningIn || isRedirecting) ? (
+              <>
+                <div 
+                  className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin"
+                  style={{ borderColor: spinnerBorder, borderTopColor: "transparent" }}
+                />
+                <span className="font-kanit text-sm">
+                  {isRedirecting 
+                    ? "กำลังเปลี่ยนหน้า..." 
+                    : loading 
+                    ? "กำลังตรวจสอบ..." 
+                    : "กำลังเข้าสู่ระบบ..."}
+                </span>
+              </>
             ) : (
               <>
                 <svg className="w-6 h-6" viewBox="0 0 24 24">
