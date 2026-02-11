@@ -25,8 +25,17 @@ export function LoginCard() {
   // Determine if we should show warning
   const showWarning = isWebView || (isMobile && !isSupportedBrowser);
 
-  const handleLoginClick = async () => {
+  const handleLoginClick = async (e?: React.MouseEvent | React.TouchEvent) => {
+    // Prevent default to avoid any browser interference
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     console.log("Login clicked:", { loading, showWarning, isWebView, isMobile, isSupportedBrowser });
+    
+    // Don't proceed if already loading
+    if (loading) return;
     
     try {
       await signInWithGoogle();
@@ -201,15 +210,18 @@ export function LoginCard() {
           {/* Login Button */}
           <motion.button
             onClick={handleLoginClick}
+            onTouchEnd={handleLoginClick}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 px-6 py-4 border-2 rounded-xl font-kanit text-lg font-medium transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-3 px-6 py-4 border-2 rounded-xl font-kanit text-lg font-medium transition-all cursor-pointer touch-manipulation"
             style={{
               backgroundColor: btnBg,
               borderColor,
               color: textColor,
               boxShadow,
               opacity: loading ? 0.5 : 1,
-              cursor: loading ? "not-allowed" : "pointer"
+              cursor: loading ? "not-allowed" : "pointer",
+              touchAction: "manipulation",
+              WebkitTapHighlightColor: "transparent",
             }}
             whileHover={!loading ? { scale: 1.02, y: -2, backgroundColor: btnHoverBg } : undefined}
             whileTap={!loading ? { scale: 0.98 } : undefined}

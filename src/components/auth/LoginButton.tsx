@@ -26,7 +26,13 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
   // Determine if we should show warning
   const shouldWarn = isWebView || (isMobile && !isSupportedBrowser);
 
-  const handleSignIn = async () => {
+  const handleSignIn = async (e?: React.MouseEvent | React.TouchEvent) => {
+    // Prevent default to avoid any browser interference
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     console.log("LoginButton clicked:", { shouldWarn, isWebView, isMobile, isSupportedBrowser });
     
     if (shouldWarn) {
@@ -132,12 +138,15 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
       </AnimatePresence>
       <motion.button
         onClick={handleSignIn}
-        className={`flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg font-kanit text-xs lg:text-sm font-medium cursor-pointer ${className}`}
+        onTouchEnd={handleSignIn}
+        className={`flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg font-kanit text-xs lg:text-sm font-medium cursor-pointer touch-manipulation ${className}`}
       style={{
         backgroundColor: isDark ? "#2D2D2D" : "#FFFFFF",
         border: `2px solid ${borderColor}`,
         boxShadow: `2px 2px 0px ${shadowColor}`,
         color: textColor,
+        touchAction: "manipulation",
+        WebkitTapHighlightColor: "transparent",
       }}
       whileHover={{ scale: 1.02, y: -1 }}
       whileTap={{ scale: 0.98 }}
