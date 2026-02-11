@@ -208,7 +208,7 @@ export function LoginCard() {
           <motion.button
             onClick={handleLoginClick}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 px-6 py-4 border-3 rounded-xl font-kanit text-lg font-medium transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-3 px-6 py-4 border-2 rounded-xl font-kanit text-lg font-medium transition-all cursor-pointer"
             style={{
               backgroundColor: btnBg,
               borderColor,
