@@ -9,6 +9,8 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
   UserCredential,
+  setPersistence,
+  browserLocalPersistence,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
@@ -57,6 +59,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [processingRedirect, setProcessingRedirect] = useState(true); // Track if we're processing a redirect
   const [authStateChecked, setAuthStateChecked] = useState(false); // Track if initial auth state has been checked
+
+  // Initialize auth persistence on mount
+  useEffect(() => {
+    // Set persistence to LOCAL to use localStorage instead of cookies
+    // This helps avoid third-party cookie issues in browsers like Brave, Firefox, Chrome
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        console.log("Auth persistence set to browserLocalPersistence");
+      })
+      .catch((error) => {
+        console.error("Failed to set auth persistence:", error);
+      });
+  }, []);
 
   // Detect browser environment on mount
   useEffect(() => {
@@ -155,6 +170,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("signInWithGoogle called:", { isMobile, isWebView, isSupportedBrowser });
     
     try {
+      // Ensure persistence is set to local before signing in
+      // This is critical for avoiding third-party cookie issues
+      await setPersistence(auth, browserLocalPersistence);
+      console.log("Persistence confirmed as browserLocalPersistence");
+      
       // On mobile devices or in-app browsers, use redirect directly
       if (isMobile || isWebView) {
         console.log("Using redirect flow for mobile/webview");
@@ -183,6 +203,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           console.log("Popup failed, trying redirect");
           setIsRedirecting(true);
+          // Ensure persistence before redirect
+          await setPersistence(auth, browserLocalPersistence);
           await signInWithRedirect(auth, googleProvider);
           // Don't reset isRedirecting here - it will reset on page reload
           return null; // Will complete after redirect
