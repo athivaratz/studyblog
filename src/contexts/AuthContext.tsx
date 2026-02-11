@@ -59,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [processingRedirect, setProcessingRedirect] = useState(true); // Track if we're processing a redirect
   const [authStateChecked, setAuthStateChecked] = useState(false); // Track if initial auth state has been checked
+  const [persistenceSet, setPersistenceSet] = useState(false); // Track if persistence has been configured
 
   // Initialize auth persistence on mount
   useEffect(() => {
@@ -67,9 +68,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPersistence(auth, browserLocalPersistence)
       .then(() => {
         console.log("Auth persistence set to browserLocalPersistence");
+        setPersistenceSet(true);
       })
       .catch((error) => {
         console.error("Failed to set auth persistence:", error);
+        // Even if persistence setup fails, allow auth to proceed with default behavior
+        // This ensures the app remains functional
+        setPersistenceSet(true);
       });
   }, []);
 
@@ -167,14 +172,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign in with Google (use redirect on mobile, popup on desktop)
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
-    console.log("signInWithGoogle called:", { isMobile, isWebView, isSupportedBrowser });
+    console.log("signInWithGoogle called:", { isMobile, isWebView, isSupportedBrowser, persistenceSet });
+    
+    // Wait for persistence to be configured before proceeding
+    // This prevents race conditions on initial page load
+    if (!persistenceSet) {
+      console.log("Waiting for persistence to be configured...");
+      // Give it a short time to initialize
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (!persistenceSet) {
+        console.warn("Persistence not yet configured, but proceeding with sign-in");
+      }
+    }
     
     try {
-      // Ensure persistence is set to local before signing in
-      // This is critical for avoiding third-party cookie issues
-      await setPersistence(auth, browserLocalPersistence);
-      console.log("Persistence confirmed as browserLocalPersistence");
-      
       // On mobile devices or in-app browsers, use redirect directly
       if (isMobile || isWebView) {
         console.log("Using redirect flow for mobile/webview");
@@ -203,8 +214,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           console.log("Popup failed, trying redirect");
           setIsRedirecting(true);
-          // Ensure persistence before redirect
-          await setPersistence(auth, browserLocalPersistence);
           await signInWithRedirect(auth, googleProvider);
           // Don't reset isRedirecting here - it will reset on page reload
           return null; // Will complete after redirect
