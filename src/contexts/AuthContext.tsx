@@ -38,6 +38,7 @@ interface AuthContextType {
   isWebView: boolean;
   isMobile: boolean;
   isSupportedBrowser: boolean;
+  isRedirecting: boolean;
   signInWithGoogle: () => Promise<UserCredential | null>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -53,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isWebView, setIsWebView] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isSupportedBrowser, setIsSupportedBrowser] = useState(true);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Detect browser environment on mount
   useEffect(() => {
@@ -64,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Handle redirect result (for in-app browser fallback)
   useEffect(() => {
+    setIsRedirecting(true);
     getRedirectResult(auth)
       .then((result) => {
         if (result) {
@@ -73,6 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch((error) => {
         console.error("Redirect sign-in error:", error);
+      })
+      .finally(() => {
+        setIsRedirecting(false);
       });
   }, []);
 
@@ -126,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [initialized]);
 
   // Sign in with Google (use redirect on mobile, popup on desktop)
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
@@ -136,7 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // On mobile devices or in-app browsers, use redirect directly
       if (isMobile || isWebView) {
         console.log("Using redirect flow");
+        setIsRedirecting(true);
         await signInWithRedirect(auth, googleProvider);
+        // Don't reset isRedirecting here - it will reset on page reload
         return null; // Will complete after redirect
       }
       
@@ -147,6 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error: unknown) {
       const firebaseError = error as { code?: string };
       console.error("Sign-in error:", firebaseError.code || error);
+      setIsRedirecting(false);
       
       // If popup is blocked or fails, fallback to redirect
       if (
@@ -156,10 +165,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ) {
         try {
           console.log("Popup failed, trying redirect");
+          setIsRedirecting(true);
           await signInWithRedirect(auth, googleProvider);
+          // Don't reset isRedirecting here - it will reset on page reload
           return null; // Will complete after redirect
         } catch (redirectError) {
           console.error("Redirect also failed:", redirectError);
+          setIsRedirecting(false);
           return null;
         }
       }
@@ -195,6 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isWebView,
     isMobile,
     isSupportedBrowser,
+    isRedirecting,
     signInWithGoogle,
     signOut,
     updateProfile,
@@ -216,6 +229,7 @@ const defaultAuthContext: AuthContextType = {
   isWebView: false,
   isMobile: false,
   isSupportedBrowser: true,
+  isRedirecting: false,
   signInWithGoogle: async () => null,
   signOut: async () => {},
   updateProfile: async () => {},
