@@ -51,9 +51,10 @@ export function LoginCard() {
       // If we reach here, it was a popup flow that completed
       // For redirect flows, the page will reload before we get here
       setIsSigningIn(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error during sign in:", error);
-      const errorMessage = error?.message || error?.code || "เกิดข้อผิดพลาดในการเข้าสู่ระบบ";
+      const firebaseError = error as { code?: string; message?: string };
+      const errorMessage = firebaseError?.message || firebaseError?.code || "เกิดข้อผิดพลาดในการเข้าสู่ระบบ";
       setError(`เกิดข้อผิดพลาด: ${errorMessage}`);
       setIsSigningIn(false);
     }
