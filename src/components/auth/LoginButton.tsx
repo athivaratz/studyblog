@@ -145,7 +145,6 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
         border: `2px solid ${borderColor}`,
         boxShadow: `2px 2px 0px ${shadowColor}`,
         color: textColor,
-        touchAction: "manipulation",
         WebkitTapHighlightColor: "transparent",
       }}
       whileHover={{ scale: 1.02, y: -1 }}

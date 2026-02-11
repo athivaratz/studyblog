@@ -220,7 +220,6 @@ export function LoginCard() {
               boxShadow,
               opacity: loading ? 0.5 : 1,
               cursor: loading ? "not-allowed" : "pointer",
-              touchAction: "manipulation",
               WebkitTapHighlightColor: "transparent",
             }}
             whileHover={!loading ? { scale: 1.02, y: -2, backgroundColor: btnHoverBg } : undefined}
