@@ -28,28 +28,33 @@ export function LoginCard() {
   const showWarning = isWebView || (isMobile && !isSupportedBrowser);
 
   const handleLoginClick = async (e?: React.MouseEvent | React.TouchEvent) => {
-    // Prevent default to avoid any browser interference
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    console.log("Login button clicked - event type:", e?.type);
+    
+    // Don't prevent default - let the browser handle it naturally
+    // This is important for redirects to work properly
     
     console.log("Login clicked:", { loading, showWarning, isWebView, isMobile, isSupportedBrowser, isRedirecting });
     
     // Don't proceed if already loading or redirecting
-    if (loading || isSigningIn || isRedirecting) return;
+    if (loading || isSigningIn || isRedirecting) {
+      console.log("Ignoring click - already in progress");
+      return;
+    }
     
     setError(null); // Clear any previous errors
     setIsSigningIn(true);
+    console.log("Starting sign in process...");
     
     try {
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      console.log("signInWithGoogle completed, result:", result);
       // If we reach here, it was a popup flow that completed
       // For redirect flows, the page will reload before we get here
       setIsSigningIn(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error during sign in:", error);
-      setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ กรุณาลองอีกครั้ง");
+      const errorMessage = error?.message || error?.code || "เกิดข้อผิดพลาดในการเข้าสู่ระบบ";
+      setError(`เกิดข้อผิดพลาด: ${errorMessage}`);
       setIsSigningIn(false);
     }
   };
@@ -243,7 +248,6 @@ export function LoginCard() {
           {/* Login Button */}
           <motion.button
             onClick={handleLoginClick}
-            onTouchEnd={handleLoginClick}
             disabled={loading || isSigningIn || isRedirecting}
             className="w-full flex items-center justify-center gap-3 px-6 py-4 border-2 rounded-xl font-kanit text-lg font-medium transition-all cursor-pointer touch-manipulation"
             style={{
