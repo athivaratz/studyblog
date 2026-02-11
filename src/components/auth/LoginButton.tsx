@@ -12,7 +12,7 @@ interface LoginButtonProps {
 }
 
 export function LoginButton({ className = "", variant = "full" }: LoginButtonProps) {
-  const { user, userProfile, loading, signInWithGoogle, signOut, isWebView } = useAuth();
+  const { user, userProfile, loading, signInWithGoogle, signOut, isWebView, isMobile, isSupportedBrowser } = useAuth();
   const { theme } = useTheme();
   const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
@@ -21,15 +21,31 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
   const textColor = isDark ? "#FFFFFF" : "#1A1A1A";
   const textMuted = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
   const avatarBg = primaryColor;
-  const [showWebViewWarning, setShowWebViewWarning] = useState(false);
+  const [showBrowserWarning, setShowBrowserWarning] = useState(false);
+  
+  // Determine if we should show warning
+  const shouldWarn = isWebView || (isMobile && !isSupportedBrowser);
 
-  const handleSignIn = async () => {
-    if (isWebView) {
-      setShowWebViewWarning(true);
-      setTimeout(() => setShowWebViewWarning(false), 4000);
-      // Still attempt sign-in (redirect fallback)
+  const handleSignIn = async (e?: React.MouseEvent | React.TouchEvent) => {
+    // Prevent default to avoid any browser interference
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
-    await signInWithGoogle();
+    
+    console.log("LoginButton clicked:", { shouldWarn, isWebView, isMobile, isSupportedBrowser });
+    
+    if (shouldWarn) {
+      setShowBrowserWarning(true);
+      setTimeout(() => setShowBrowserWarning(false), 5000);
+      // Still allow sign-in, just show warning
+    }
+    
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error("LoginButton error:", error);
+    }
   };
 
   if (loading) {
@@ -100,7 +116,7 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
   return (
     <>
       <AnimatePresence>
-        {showWebViewWarning && (
+        {showBrowserWarning && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -113,19 +129,23 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
           >
             <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: "#FFC107" }} />
             <p className="font-kanit text-xs" style={{ color: isDark ? "#FFD54F" : "#856404" }}>
-              กรุณาเปิดใน Chrome/Safari เพื่อเข้าสู่ระบบ
+              {isWebView 
+                ? "กรุณาเปิดใน Chrome/Safari เพื่อเข้าสู่ระบบ"
+                : "กรุณาใช้ Chrome หรือ Safari เท่านั้น"}
             </p>
           </motion.div>
         )}
       </AnimatePresence>
       <motion.button
         onClick={handleSignIn}
-        className={`flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg font-kanit text-xs lg:text-sm font-medium cursor-pointer ${className}`}
+        onTouchEnd={handleSignIn}
+        className={`flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg font-kanit text-xs lg:text-sm font-medium cursor-pointer touch-manipulation ${className}`}
       style={{
         backgroundColor: isDark ? "#2D2D2D" : "#FFFFFF",
         border: `2px solid ${borderColor}`,
         boxShadow: `2px 2px 0px ${shadowColor}`,
         color: textColor,
+        WebkitTapHighlightColor: "transparent",
       }}
       whileHover={{ scale: 1.02, y: -1 }}
       whileTap={{ scale: 0.98 }}

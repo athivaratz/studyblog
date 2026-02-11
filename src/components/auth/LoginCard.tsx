@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
@@ -8,11 +8,41 @@ import { PaperCard } from "@/components/ui";
 import { Sparkles, BookOpen, Calendar, Brain, ExternalLink, Copy, Check, AlertTriangle } from "lucide-react";
 
 export function LoginCard() {
-  const { signInWithGoogle, loading, isWebView } = useAuth();
+  const { signInWithGoogle, loading, isWebView, isMobile, isSupportedBrowser } = useAuth();
   const { theme } = useTheme();
   const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [copied, setCopied] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState("");
+
+  // Get current URL on client side only
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCurrentUrl(window.location.href);
+    }
+  }, []);
+
+  // Determine if we should show warning
+  const showWarning = isWebView || (isMobile && !isSupportedBrowser);
+
+  const handleLoginClick = async (e?: React.MouseEvent | React.TouchEvent) => {
+    // Prevent default to avoid any browser interference
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    console.log("Login clicked:", { loading, showWarning, isWebView, isMobile, isSupportedBrowser });
+    
+    // Don't proceed if already loading
+    if (loading) return;
+    
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error("Error during sign in:", error);
+    }
+  };
 
   // Theme colors
   const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
@@ -110,9 +140,9 @@ export function LoginCard() {
 
 
 
-          {/* WebView Warning */}
+          {/* Browser Warning */}
           <AnimatePresence>
-            {isWebView && (
+            {showWarning && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -126,7 +156,9 @@ export function LoginCard() {
                 <div className="flex items-start gap-2 mb-2">
                   <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: warningBorder }} />
                   <p className="font-kanit text-sm font-medium" style={{ color: warningText }}>
-                    เบราว์เซอร์ในแอปไม่รองรับการเข้าสู่ระบบ Google
+                    {isWebView 
+                      ? "เบราว์เซอร์ในแอปไม่รองรับการเข้าสู่ระบบ Google"
+                      : "กรุณาใช้ Chrome หรือ Safari เท่านั้น"}
                   </p>
                 </div>
                 <p className="font-kanit text-xs mb-3" style={{ color: warningText }}>
@@ -156,7 +188,7 @@ export function LoginCard() {
                     )}
                   </motion.button>
                   <motion.a
-                    href={window?.location?.href}
+                    href={currentUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border-2 font-kanit text-xs font-medium cursor-pointer no-underline"
@@ -177,16 +209,18 @@ export function LoginCard() {
 
           {/* Login Button */}
           <motion.button
-            onClick={signInWithGoogle}
+            onClick={handleLoginClick}
+            onTouchEnd={handleLoginClick}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 px-6 py-4 border-3 rounded-xl font-kanit text-lg font-medium transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-3 px-6 py-4 border-2 rounded-xl font-kanit text-lg font-medium transition-all cursor-pointer touch-manipulation"
             style={{
               backgroundColor: btnBg,
               borderColor,
               color: textColor,
               boxShadow,
               opacity: loading ? 0.5 : 1,
-              cursor: loading ? "not-allowed" : "pointer"
+              cursor: loading ? "not-allowed" : "pointer",
+              WebkitTapHighlightColor: "transparent",
             }}
             whileHover={!loading ? { scale: 1.02, y: -2, backgroundColor: btnHoverBg } : undefined}
             whileTap={!loading ? { scale: 0.98 } : undefined}

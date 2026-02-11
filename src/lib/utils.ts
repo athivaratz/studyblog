@@ -54,13 +54,20 @@ export function getUrgentThreshold(): Date {
 }
 
 /**
+ * Get user agent string safely
+ */
+function getUserAgent(): string {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return "";
+  return navigator.userAgent || navigator.vendor || "";
+}
+
+/**
  * Detect if the current browser is an in-app WebView (LINE, Facebook, Instagram, etc.)
  * Google blocks OAuth sign-in from these embedded browsers (403: disallowed_useragent)
  */
 export function isInAppBrowser(): boolean {
-  if (typeof window === "undefined" || typeof navigator === "undefined") return false;
-
-  const ua = navigator.userAgent || navigator.vendor || "";
+  const ua = getUserAgent();
+  if (!ua) return false;
 
   // Common in-app browser signatures
   const inAppPatterns = [
@@ -93,4 +100,44 @@ export function isInAppBrowser(): boolean {
     (/iPhone|iPad|iPod/.test(ua) && !ua.includes("Safari") && ua.includes("AppleWebKit"));
 
   return isWebView;
+}
+
+/**
+ * Check if the current device is mobile (phone or tablet)
+ */
+export function isMobileDevice(): boolean {
+  const ua = getUserAgent();
+  if (!ua) return false;
+
+  // Check for mobile device indicators
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+}
+
+/**
+ * Check if the current browser is Chrome on mobile
+ */
+export function isMobileChrome(): boolean {
+  const ua = getUserAgent();
+  if (!ua) return false;
+
+  // Chrome on Android
+  return isMobileDevice() && /Chrome/i.test(ua) && /Android/i.test(ua) && !/Edg/i.test(ua);
+}
+
+/**
+ * Check if the current browser is Safari on iOS
+ */
+export function isMobileSafari(): boolean {
+  const ua = getUserAgent();
+  if (!ua) return false;
+
+  // Safari on iOS (must have Safari in UA and not be in-app browser)
+  return /iPhone|iPad|iPod/.test(ua) && /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua);
+}
+
+/**
+ * Check if the current browser is a supported mobile browser (Chrome or Safari)
+ */
+export function isSupportedMobileBrowser(): boolean {
+  return isMobileChrome() || isMobileSafari();
 }
