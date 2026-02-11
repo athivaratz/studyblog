@@ -18,8 +18,9 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Initialize auth persistence immediately when this module loads
-// This is a synchronous-like operation that sets up persistence before any auth operations
+// Initialize auth persistence function
+// This function must be awaited before any auth operations to ensure persistence is configured
+// It's idempotent - safe to call multiple times, will only execute once
 let persistenceInitialized = false;
 
 const initializeAuthPersistence = async (authInstance: Auth): Promise<void> => {
@@ -30,13 +31,16 @@ const initializeAuthPersistence = async (authInstance: Auth): Promise<void> => {
     console.log("Firebase Auth persistence set to browserLocalPersistence");
     persistenceInitialized = true;
   } catch (error) {
-    console.error("Failed to set auth persistence:", error);
+    console.error("Failed to set auth persistence - auth will use default cookie-based persistence:", error);
+    console.warn("Note: Default cookie-based persistence may not work in browsers with third-party cookie restrictions (Brave, Firefox with ETP)");
     // Mark as initialized even on failure to prevent retries
+    // Auth operations will proceed with Firebase's default persistence behavior
     persistenceInitialized = true;
   }
 };
 
-// Initialize persistence immediately when running in browser
+// Start persistence initialization immediately when module loads in browser
+// This is fire-and-forget - callers MUST await initializeAuthPersistence() before auth operations
 if (typeof window !== 'undefined') {
   initializeAuthPersistence(auth);
 }
