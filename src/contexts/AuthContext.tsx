@@ -178,23 +178,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // In practice, persistence setup is very fast (< 50ms), so this is just a safety check
     if (!persistenceReady) {
       console.log("Waiting for persistence setup to complete...");
-      // Wait up to 500ms for persistence to be ready
-      const timeout = 500;
-      const startTime = Date.now();
+      // Simple 100ms delay - if persistence isn't ready by then, proceed anyway
+      await new Promise<void>((resolve) => setTimeout(resolve, 100));
       
-      await new Promise<void>((resolve) => {
-        const checkInterval = setInterval(() => {
-          if (persistenceReady || Date.now() - startTime > timeout) {
-            clearInterval(checkInterval);
-            if (!persistenceReady) {
-              console.warn("Persistence setup not complete, but proceeding anyway");
-            } else {
-              console.log("Persistence setup completed");
-            }
-            resolve();
-          }
-        }, 50);
-      });
+      if (!persistenceReady) {
+        console.warn("Persistence setup not complete after 100ms, but proceeding anyway");
+      } else {
+        console.log("Persistence setup completed");
+      }
     }
     
     try {
