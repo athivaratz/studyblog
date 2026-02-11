@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence, Auth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -18,6 +18,29 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
+// Initialize auth persistence immediately when this module loads
+// This is a synchronous-like operation that sets up persistence before any auth operations
+let persistenceInitialized = false;
+
+const initializeAuthPersistence = async (authInstance: Auth): Promise<void> => {
+  if (persistenceInitialized) return;
+  
+  try {
+    await setPersistence(authInstance, browserLocalPersistence);
+    console.log("Firebase Auth persistence set to browserLocalPersistence");
+    persistenceInitialized = true;
+  } catch (error) {
+    console.error("Failed to set auth persistence:", error);
+    // Mark as initialized even on failure to prevent retries
+    persistenceInitialized = true;
+  }
+};
+
+// Initialize persistence immediately when running in browser
+if (typeof window !== 'undefined') {
+  initializeAuthPersistence(auth);
+}
+
 // Google Provider with Thai locale
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
@@ -30,4 +53,4 @@ googleProvider.setCustomParameters({
 // googleProvider.addScope("https://www.googleapis.com/auth/classroom.coursework.me.readonly");
 // googleProvider.addScope("https://www.googleapis.com/auth/calendar");
 
-export { app, auth, db, storage, googleProvider };
+export { app, auth, db, storage, googleProvider, initializeAuthPersistence };

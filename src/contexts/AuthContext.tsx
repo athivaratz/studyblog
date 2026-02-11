@@ -9,11 +9,9 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
   UserCredential,
-  setPersistence,
-  browserLocalPersistence,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db, googleProvider } from "@/lib/firebase";
+import { auth, db, googleProvider, initializeAuthPersistence } from "@/lib/firebase";
 import { initializeNewUser } from "@/lib/firebaseServices";
 import { 
   isInAppBrowser, 
@@ -59,24 +57,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [processingRedirect, setProcessingRedirect] = useState(true); // Track if we're processing a redirect
   const [authStateChecked, setAuthStateChecked] = useState(false); // Track if initial auth state has been checked
-  const [persistenceReady, setPersistenceReady] = useState(false); // Track if persistence check is complete (success or failure)
-
-  // Initialize auth persistence on mount
-  useEffect(() => {
-    // Set persistence to LOCAL to use localStorage instead of cookies
-    // This helps avoid third-party cookie issues in browsers like Brave, Firefox, Chrome
-    setPersistence(auth, browserLocalPersistence)
-      .then(() => {
-        console.log("Auth persistence set to browserLocalPersistence");
-        setPersistenceReady(true);
-      })
-      .catch((error) => {
-        console.error("Failed to set auth persistence:", error);
-        // Mark as ready even if it failed - this allows auth to proceed with default behavior
-        // The app remains functional even without explicit persistence configuration
-        setPersistenceReady(true);
-      });
-  }, []);
 
   // Detect browser environment on mount
   useEffect(() => {
@@ -88,7 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Handle redirect result (for in-app browser fallback)
   useEffect(() => {
-    getRedirectResult(auth)
+    // Ensure persistence is initialized before checking redirect result
+    initializeAuthPersistence(auth).then(() => {
+      return getRedirectResult(auth);
+    })
       .then((result) => {
         if (result) {
           // Redirect sign-in succeeded, onAuthStateChanged will handle the rest
@@ -172,21 +155,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign in with Google (use redirect on mobile, popup on desktop)
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
-    console.log("signInWithGoogle called:", { isMobile, isWebView, isSupportedBrowser, persistenceReady });
+    console.log("signInWithGoogle called:", { isMobile, isWebView, isSupportedBrowser });
     
-    // Wait briefly for persistence setup if it's not ready yet
-    // In practice, persistence setup is very fast (< 50ms), so this is just a safety check
-    if (!persistenceReady) {
-      console.log("Waiting for persistence setup to complete...");
-      // Simple 100ms delay - if persistence isn't ready by then, proceed anyway
-      await new Promise<void>((resolve) => setTimeout(resolve, 100));
-      
-      if (!persistenceReady) {
-        console.warn("Persistence setup not complete after 100ms, but proceeding anyway");
-      } else {
-        console.log("Persistence setup completed");
-      }
-    }
+    // Ensure persistence is set before any sign-in operation
+    await initializeAuthPersistence(auth);
     
     try {
       // On mobile devices or in-app browsers, use redirect directly
