@@ -30,7 +30,7 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
     if (shouldWarn) {
       setShowBrowserWarning(true);
       setTimeout(() => setShowBrowserWarning(false), 5000);
-      return; // Don't attempt sign-in if browser is not supported
+      // Still allow sign-in, just show warning
     }
     await signInWithGoogle();
   };

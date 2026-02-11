@@ -183,18 +183,18 @@ export function LoginCard() {
           {/* Login Button */}
           <motion.button
             onClick={signInWithGoogle}
-            disabled={loading || showWarning}
+            disabled={loading}
             className="w-full flex items-center justify-center gap-3 px-6 py-4 border-3 rounded-xl font-kanit text-lg font-medium transition-all cursor-pointer"
             style={{
               backgroundColor: btnBg,
               borderColor,
               color: textColor,
               boxShadow,
-              opacity: (loading || showWarning) ? 0.5 : 1,
-              cursor: (loading || showWarning) ? "not-allowed" : "pointer"
+              opacity: loading ? 0.5 : 1,
+              cursor: loading ? "not-allowed" : "pointer"
             }}
-            whileHover={!(loading || showWarning) ? { scale: 1.02, y: -2, backgroundColor: btnHoverBg } : undefined}
-            whileTap={!(loading || showWarning) ? { scale: 0.98 } : undefined}
+            whileHover={!loading ? { scale: 1.02, y: -2, backgroundColor: btnHoverBg } : undefined}
+            whileTap={!loading ? { scale: 0.98 } : undefined}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
