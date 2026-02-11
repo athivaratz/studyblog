@@ -134,25 +134,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign in with Google (use redirect on mobile, popup on desktop)
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
-    console.log("signInWithGoogle:", { isMobile, isWebView });
+    console.log("signInWithGoogle called:", { isMobile, isWebView, isSupportedBrowser });
     
     try {
       // On mobile devices or in-app browsers, use redirect directly
       if (isMobile || isWebView) {
-        console.log("Using redirect flow");
+        console.log("Using redirect flow for mobile/webview");
         setIsRedirecting(true);
         await signInWithRedirect(auth, googleProvider);
+        console.log("signInWithRedirect called successfully");
         // Don't reset isRedirecting here - it will reset on page reload
         return null; // Will complete after redirect
       }
       
       // On desktop, try popup first
-      console.log("Using popup flow");
+      console.log("Using popup flow for desktop");
       const result = await signInWithPopup(auth, googleProvider);
       return result;
     } catch (error: unknown) {
-      const firebaseError = error as { code?: string };
-      console.error("Sign-in error:", firebaseError.code || error);
+      const firebaseError = error as { code?: string; message?: string };
+      console.error("Sign-in error:", firebaseError);
       setIsRedirecting(false);
       
       // If popup is blocked or fails, fallback to redirect
@@ -173,7 +174,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return null;
         }
       }
-      return null;
+      
+      // Re-throw the error so it can be caught in the UI
+      throw error;
     }
   };
 

@@ -15,6 +15,7 @@ export function LoginCard() {
   const [copied, setCopied] = useState(false);
   const [currentUrl, setCurrentUrl] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Get current URL on client side only
   useEffect(() => {
@@ -33,18 +34,22 @@ export function LoginCard() {
       e.stopPropagation();
     }
     
-    console.log("Login clicked:", { loading, showWarning, isWebView, isMobile, isSupportedBrowser });
+    console.log("Login clicked:", { loading, showWarning, isWebView, isMobile, isSupportedBrowser, isRedirecting });
     
     // Don't proceed if already loading or redirecting
     if (loading || isSigningIn || isRedirecting) return;
     
+    setError(null); // Clear any previous errors
+    setIsSigningIn(true);
+    
     try {
-      setIsSigningIn(true);
       await signInWithGoogle();
+      // If we reach here, it was a popup flow that completed
+      // For redirect flows, the page will reload before we get here
+      setIsSigningIn(false);
     } catch (error) {
       console.error("Error during sign in:", error);
-    } finally {
-      // Reset sign-in state (redirect will reload page anyway)
+      setError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ กรุณาลองอีกครั้ง");
       setIsSigningIn(false);
     }
   };
@@ -207,6 +212,29 @@ export function LoginCard() {
                     <ExternalLink className="w-3.5 h-3.5" />
                     <span>เปิดในเบราว์เซอร์</span>
                   </motion.a>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Error Message */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-4 p-4 rounded-xl border-2"
+                style={{
+                  backgroundColor: isDark ? "#5C2A2A" : "#FFE5E5",
+                  borderColor: "#FF6B6B",
+                }}
+              >
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: "#FF6B6B" }} />
+                  <p className="font-kanit text-sm" style={{ color: isDark ? "#FFB4B4" : "#D32F2F" }}>
+                    {error}
+                  </p>
                 </div>
               </motion.div>
             )}
