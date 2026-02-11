@@ -55,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isMobile, setIsMobile] = useState(false);
   const [isSupportedBrowser, setIsSupportedBrowser] = useState(true);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [processingRedirect, setProcessingRedirect] = useState(true); // Track if we're processing a redirect
 
   // Detect browser environment on mount
   useEffect(() => {
@@ -70,19 +71,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((result) => {
         if (result) {
           // Redirect sign-in succeeded, onAuthStateChanged will handle the rest
-          console.log("Redirect sign-in successful");
+          console.log("Redirect sign-in successful, user:", result.user.email);
           setIsRedirecting(false);
         }
+        // Mark that we've finished checking for redirect
+        setProcessingRedirect(false);
       })
       .catch((error) => {
         console.error("Redirect sign-in error:", error);
         setIsRedirecting(false);
+        setProcessingRedirect(false);
       });
   }, []);
 
   // Listen to auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("Auth state changed, user:", user?.email || "null");
       setUser(user);
       
       if (user) {
@@ -125,12 +130,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error("Error initializing user:", err);
         }
       }
-
-      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [initialized]);
+
+  // Set loading to false only after redirect processing is complete
+  useEffect(() => {
+    if (!processingRedirect) {
+      console.log("Redirect processing complete, setting loading to false");
+      setLoading(false);
+    }
+  }, [processingRedirect]);
 
   // Sign in with Google (use redirect on mobile, popup on desktop)
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
