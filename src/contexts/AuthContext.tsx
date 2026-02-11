@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [processingRedirect, setProcessingRedirect] = useState(true); // Track if we're processing a redirect
   const [authStateChecked, setAuthStateChecked] = useState(false); // Track if initial auth state has been checked
-  const [persistenceSet, setPersistenceSet] = useState(false); // Track if persistence has been configured
+  const [persistenceReady, setPersistenceReady] = useState(false); // Track if persistence check is complete (success or failure)
 
   // Initialize auth persistence on mount
   useEffect(() => {
@@ -68,13 +68,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPersistence(auth, browserLocalPersistence)
       .then(() => {
         console.log("Auth persistence set to browserLocalPersistence");
-        setPersistenceSet(true);
+        setPersistenceReady(true);
       })
       .catch((error) => {
         console.error("Failed to set auth persistence:", error);
-        // Even if persistence setup fails, allow auth to proceed with default behavior
-        // This ensures the app remains functional
-        setPersistenceSet(true);
+        // Mark as ready even if it failed - this allows auth to proceed with default behavior
+        // The app remains functional even without explicit persistence configuration
+        setPersistenceReady(true);
       });
   }, []);
 
@@ -172,24 +172,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign in with Google (use redirect on mobile, popup on desktop)
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
-    console.log("signInWithGoogle called:", { isMobile, isWebView, isSupportedBrowser, persistenceSet });
+    console.log("signInWithGoogle called:", { isMobile, isWebView, isSupportedBrowser, persistenceReady });
     
-    // Wait for persistence to be configured before proceeding (max 2 seconds)
-    // This prevents race conditions on initial page load
-    if (!persistenceSet) {
-      console.log("Waiting for persistence to be configured...");
-      const maxWaitTime = 2000; // 2 seconds max wait
+    // Wait briefly for persistence setup if it's not ready yet
+    // In practice, persistence setup is very fast (< 50ms), so this is just a safety check
+    if (!persistenceReady) {
+      console.log("Waiting for persistence setup to complete...");
+      // Wait up to 500ms for persistence to be ready
+      const timeout = 500;
       const startTime = Date.now();
       
-      while (!persistenceSet && Date.now() - startTime < maxWaitTime) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-      
-      if (!persistenceSet) {
-        console.warn("Persistence setup timed out after 2s, proceeding anyway");
-      } else {
-        console.log("Persistence configured successfully");
-      }
+      await new Promise<void>((resolve) => {
+        const checkInterval = setInterval(() => {
+          if (persistenceReady || Date.now() - startTime > timeout) {
+            clearInterval(checkInterval);
+            if (!persistenceReady) {
+              console.warn("Persistence setup not complete, but proceeding anyway");
+            } else {
+              console.log("Persistence setup completed");
+            }
+            resolve();
+          }
+        }, 50);
+      });
     }
     
     try {
