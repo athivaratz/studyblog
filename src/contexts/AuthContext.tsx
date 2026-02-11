@@ -130,18 +130,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign in with Google (use redirect on mobile, popup on desktop)
   const signInWithGoogle = async (): Promise<UserCredential | null> => {
+    console.log("AuthContext: signInWithGoogle called");
+    console.log("AuthContext: isMobile =", isMobile);
+    console.log("AuthContext: isWebView =", isWebView);
+    
     try {
       // On mobile devices or in-app browsers, use redirect directly
       if (isMobile || isWebView) {
+        console.log("AuthContext: Using redirect flow");
         await signInWithRedirect(auth, googleProvider);
+        console.log("AuthContext: Redirect initiated");
         return null; // Will complete after redirect
       }
       
       // On desktop, try popup first
+      console.log("AuthContext: Using popup flow");
       const result = await signInWithPopup(auth, googleProvider);
+      console.log("AuthContext: Popup completed successfully");
       return result;
     } catch (error: unknown) {
       const firebaseError = error as { code?: string };
+      console.error("AuthContext: Sign-in error:", error);
       // If popup is blocked or fails, fallback to redirect
       if (
         firebaseError.code === "auth/popup-blocked" ||
@@ -149,14 +158,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         firebaseError.code === "auth/cancelled-popup-request"
       ) {
         try {
+          console.log("AuthContext: Popup failed, trying redirect fallback");
           await signInWithRedirect(auth, googleProvider);
           return null; // Will complete after redirect
         } catch (redirectError) {
-          console.error("Redirect sign-in also failed:", redirectError);
+          console.error("AuthContext: Redirect sign-in also failed:", redirectError);
           return null;
         }
       }
-      console.error("Error signing in with Google:", error);
+      console.error("AuthContext: Error signing in with Google:", error);
       return null;
     }
   };

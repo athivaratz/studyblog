@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, usePrimaryColor } from "@/contexts/ThemeContext";
@@ -13,9 +13,33 @@ export function LoginCard() {
   const primaryColor = usePrimaryColor();
   const isDark = theme === "dark";
   const [copied, setCopied] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState("");
+
+  // Get current URL on client side only
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCurrentUrl(window.location.href);
+    }
+  }, []);
 
   // Determine if we should show warning
   const showWarning = isWebView || (isMobile && !isSupportedBrowser);
+
+  const handleLoginClick = async () => {
+    console.log("Login button clicked!");
+    console.log("Loading:", loading);
+    console.log("showWarning:", showWarning);
+    console.log("isWebView:", isWebView);
+    console.log("isMobile:", isMobile);
+    console.log("isSupportedBrowser:", isSupportedBrowser);
+    
+    try {
+      await signInWithGoogle();
+      console.log("signInWithGoogle completed");
+    } catch (error) {
+      console.error("Error during sign in:", error);
+    }
+  };
 
   // Theme colors
   const pageBg = isDark ? "#1A1A1A" : "#F5F5F5";
@@ -161,7 +185,7 @@ export function LoginCard() {
                     )}
                   </motion.button>
                   <motion.a
-                    href={window?.location?.href}
+                    href={currentUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border-2 font-kanit text-xs font-medium cursor-pointer no-underline"
@@ -182,7 +206,7 @@ export function LoginCard() {
 
           {/* Login Button */}
           <motion.button
-            onClick={signInWithGoogle}
+            onClick={handleLoginClick}
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 px-6 py-4 border-3 rounded-xl font-kanit text-lg font-medium transition-all cursor-pointer"
             style={{

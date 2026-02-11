@@ -27,12 +27,24 @@ export function LoginButton({ className = "", variant = "full" }: LoginButtonPro
   const shouldWarn = isWebView || (isMobile && !isSupportedBrowser);
 
   const handleSignIn = async () => {
+    console.log("LoginButton clicked!");
+    console.log("shouldWarn:", shouldWarn);
+    console.log("isWebView:", isWebView);
+    console.log("isMobile:", isMobile);
+    console.log("isSupportedBrowser:", isSupportedBrowser);
+    
     if (shouldWarn) {
       setShowBrowserWarning(true);
       setTimeout(() => setShowBrowserWarning(false), 5000);
       // Still allow sign-in, just show warning
     }
-    await signInWithGoogle();
+    
+    try {
+      await signInWithGoogle();
+      console.log("LoginButton: signInWithGoogle completed");
+    } catch (error) {
+      console.error("LoginButton: Error during sign in:", error);
+    }
   };
 
   if (loading) {
